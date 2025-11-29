@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { postCreate } from "./lib/service";
 
 function App() {
 	const [rows, setRows] = useState([]);
@@ -10,6 +11,9 @@ function App() {
 	const [fileRef, setFileRef] = useState(null);
 	const [prompt, setPrompt] = useState("");
 	const [error, setError] = useState("");
+	const [submitting, setSubmitting] = useState(false);
+	const [submitError, setSubmitError] = useState("");
+	const [result, setResult] = useState(null);
 
 	const headers = rows.length ? rows[0] : [];
 	const bodyRows = useMemo(
@@ -75,6 +79,24 @@ function App() {
 		reader.readAsText(file);
 	};
 
+	const handleGenerate = async () => {
+		if (!fileRef) {
+			setSubmitError("Upload a CSV before generating a model.");
+			return;
+		}
+		setSubmitError("");
+		setSubmitting(true);
+		setResult(null);
+		try {
+			const data = postCreate(prompt, fileRef);
+			setResult(data);
+		} catch (err) {
+			setSubmitError(err.message || "Failed to generate model.");
+		} finally {
+			setSubmitting(false);
+		}
+	};
+
 	return (
 		<div className="min-h-screen bg-main-white text-main-black">
 			<div className="mx-auto max-w-5xl px-4 py-10">
@@ -133,9 +155,7 @@ function App() {
 									{rows.length ? `${dimensions.totalRows} rows` : "No data yet"}
 								</span>
 								<span className="text-sm text-slate-500">
-									{rows.length
-										? `${dimensions.totalColumns} columns`
-										: "No data yet"}
+									{rows.length ? `${dimensions.totalColumns} columns` : ""}
 								</span>
 							</div>
 						</div>
@@ -210,11 +230,28 @@ function App() {
 				</div>
 
 				<div className="mt-8 space-y-3 flex">
-					<button className="mx-auto flex-row bg-main-black text-white rounded text-lg h-12 w-60 hover:bg-main-black-hover">
-						{" "}
-						Generate Model
+					<button
+						className="mx-auto flex-row bg-main-black text-white rounded text-lg h-12 w-60 hover:bg-main-black-hover disabled:opacity-60 disabled:cursor-not-allowed"
+						onClick={handleGenerate}
+						disabled={submitting}
+					>
+						{submitting ? "Generating..." : "Generate Model"}
 					</button>
 				</div>
+
+				{submitError && (
+					<p className="mt-2 text-sm text-center text-rose-600">
+						{submitError}
+					</p>
+				)}
+				{result && (
+					<div className="mt-4 rounded border border-slate-200 bg-main-white-hover p-4 text-sm">
+						<p className="font-semibold mb-2">Response</p>
+						<pre className="whitespace-pre-wrap break-words text-xs text-main-black-hover">
+							{JSON.stringify(result, null, 2)}
+						</pre>
+					</div>
+				)}
 			</div>
 		</div>
 	);

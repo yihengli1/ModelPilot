@@ -1,17 +1,10 @@
-import {
-	BrowserRouter,
-	Routes,
-	Route,
-	useLocation,
-	useNavigate,
-} from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import InputPage from "./components/InputPage";
 import ResultsPage from "./components/ResultsPage";
 import { fakeResultLarge, fakeResultSmall } from "./lib/testing";
 
 const ResultsRoute = () => {
 	const location = useLocation();
-	const navigate = useNavigate();
 	const { result, datasetText, dimensions } = location.state || {};
 
 	return (
@@ -19,7 +12,6 @@ const ResultsRoute = () => {
 			result={result || {}}
 			datasetText={datasetText || ""}
 			dimensions={dimensions || { totalRows: 0, totalColumns: 0 }}
-			onBack={() => navigate("/")}
 		/>
 	);
 };
@@ -32,21 +24,11 @@ function App() {
 				<Route path="/results" element={<ResultsRoute />} />
 				<Route
 					path="/testing1"
-					element={
-						<ResultsPage
-							result={fakeResultSmall}
-							onBack={() => navigate("/")}
-						/>
-					}
+					element={<ResultsPage result={fakeResultSmall} />}
 				/>
 				<Route
 					path="/testing2"
-					element={
-						<ResultsPage
-							result={fakeResultLarge}
-							onBack={() => navigate("/")}
-						/>
-					}
+					element={<ResultsPage result={fakeResultLarge} />}
 				/>
 			</Routes>
 		</BrowserRouter>

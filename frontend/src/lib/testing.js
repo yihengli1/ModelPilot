@@ -9,7 +9,7 @@ export const fakeResultSmall = {
 		training_error: 0.12,
 		validation_error: 0.18,
 		accuracy: 0.82,
-		f1: 0.80,
+		f1: 0.8,
 	},
 	selected_features: ["age", "income", "churn_risk"],
 	training_split: "80%",
@@ -25,6 +25,7 @@ export const fakeResultSmall = {
 		totalRows: 5,
 		totalColumns: 4,
 	},
+	optimizer: "Stochastic Gradient Descent",
 };
 
 export const fakeResultLarge = {
@@ -68,4 +69,5 @@ export const fakeResultLarge = {
 		totalRows: 5,
 		totalColumns: 6,
 	},
+	optimizer: "Stochastic Gradient Descent",
 };

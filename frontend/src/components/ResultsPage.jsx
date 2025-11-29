@@ -19,6 +19,8 @@ function ResultsPage({ result, onBack }) {
 	const trainSplit = payload.training_split;
 	const valSplit = payload.val_split;
 
+	const optimizer = payload.optimizer;
+
 	const datasetPreview = (result.datasetText || "")
 		.trim()
 		.split(/\r?\n/)
@@ -136,6 +138,11 @@ function ResultsPage({ result, onBack }) {
 								{datasetPreview || "No dataset found."}
 							</pre>
 						</div>
+					</div>
+					<div className="rounded border border-slate-200 bg-main-white-hover p-4">
+						<h2 className="text-lg font-semibold mb-2">Optimizer</h2>
+
+						<p className="text-sm text-slate-700 mt-1">{optimizer}</p>
 					</div>
 				</section>
 

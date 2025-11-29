@@ -47,11 +47,11 @@ function App() {
 	};
 
 	return (
-		<div className="min-h-screen bg-white text-slate-900">
+		<div className="min-h-screen bg-main-white text-main-black">
 			<div className="mx-auto max-w-5xl px-4 py-10">
 				<header className="mb-8">
 					<h1 className="text-3xl text-center font-semibold tracking-tight">
-						ModelPilot Planner
+						ModelPilot
 					</h1>
 					<p className="mt-2 text-slate-600">
 						Paste or upload a CSV, preview it, and add optional context for the
@@ -64,7 +64,7 @@ function App() {
 						<div className="flex items-center gap-3">
 							<label
 								htmlFor="csv-upload"
-								className="inline-flex cursor-pointer items-center gap-2 rounded border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+									className="inline-flex cursor-pointer items-center gap-2 rounded border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-main-white-hover"
 							>
 								<input
 									id="csv-upload"
@@ -78,7 +78,7 @@ function App() {
 							<button
 								type="button"
 								onClick={handleParse}
-								className="inline-flex items-center justify-center rounded bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+								className="inline-flex items-center justify-center rounded bg-main-black px-4 py-2 text-sm font-semibold text-white hover:bg-main-black-hover"
 							>
 								Insert CSV
 							</button>
@@ -89,7 +89,7 @@ function App() {
 							onChange={(e) => setCsvText(e.target.value)}
 							placeholder="Paste CSV data here..."
 							rows={12}
-							className="w-full rounded border border-slate-300 p-3 text-sm font-mono text-slate-900 focus:border-slate-500 focus:outline-none"
+							className="w-full rounded border border-slate-300 p-3 text-sm font-mono text-main-black focus:border-slate-500 focus:outline-none"
 						/>
 
 						{error && <p className="text-sm text-rose-600">{error}</p>}
@@ -104,7 +104,7 @@ function App() {
 						</div>
 						<div className="overflow-auto rounded border border-slate-200">
 							<table className="min-w-full border-collapse text-sm">
-								<thead className="bg-slate-50">
+								<thead className="bg-main-white-hover">
 									<tr>
 										{headers.map((cell, idx) => (
 											<th
@@ -125,12 +125,12 @@ function App() {
 									{bodyRows.map((row, rIdx) => (
 										<tr
 											key={`row-${rIdx}`}
-											className="odd:bg-white even:bg-slate-50"
+											className="odd:bg-main-white even:bg-main-white-hover"
 										>
 											{row.map((cell, cIdx) => (
 												<td
 													key={`cell-${rIdx}-${cIdx}`}
-													className="border border-slate-200 px-3 py-2 text-slate-800"
+													className="border border-slate-200 px-3 py-2 text-main-black-hover"
 												>
 													{cell}
 												</td>
@@ -164,12 +164,12 @@ function App() {
 						onChange={(e) => setPrompt(e.target.value)}
 						placeholder="Describe the dataset context, target column meaning, or what you want the model to optimize for..."
 						rows={5}
-						className="w-full rounded border border-slate-300 p-3 text-sm text-slate-900 focus:border-slate-500 focus:outline-none"
+						className="w-full rounded border border-slate-300 p-3 text-sm text-main-black focus:border-slate-500 focus:outline-none"
 					/>
 				</div>
 
 				<div className="mt-8 space-y-3 flex">
-					<button className="mx-auto flex-row bg-slate-900 text-white rounded text-lg h-12 w-60 hover:bg-slate-800">
+					<button className="mx-auto flex-row bg-main-black text-white rounded text-lg h-12 w-60 hover:bg-main-black-hover">
 						{" "}
 						Generate Model
 					</button>

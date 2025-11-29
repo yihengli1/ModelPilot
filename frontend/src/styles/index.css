@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+	--primary-black: #0f172a;
+	--primary-black-hover: #1e293b;
+	--primary-white: #ffffff;
+	--primary-white-hover: #f8fafc;
+}
+
 body {
 	min-height: 100vh;
 }

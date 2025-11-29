@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const listifyObject = (obj) =>
 	Object.entries(obj || {}).map(([key, value]) => ({
@@ -6,7 +7,7 @@ const listifyObject = (obj) =>
 		value: typeof value === "object" ? JSON.stringify(value) : String(value),
 	}));
 
-function ResultsPage({ result, onBack }) {
+function ResultsPage({ result }) {
 	const payload = result;
 	const modelName = payload.model;
 	const hyperparameters = listifyObject(payload.hyperparameters);
@@ -40,12 +41,12 @@ function ResultsPage({ result, onBack }) {
 								Review the generated model details and dataset snapshot.
 							</p>
 						</div>
-						<button
-							onClick={onBack}
+						<Link
 							className="rounded border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-main-white-hover"
+							to="/"
 						>
 							Back to input
-						</button>
+						</Link>
 					</div>
 				</header>
 

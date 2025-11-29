@@ -1,47 +1,76 @@
 import { useMemo, useState } from "react";
 
 function App() {
-	const [csvText, setCsvText] = useState("");
 	const [rows, setRows] = useState([]);
+	const [dimensions, setDimensions] = useState({
+		totalRows: 0,
+		totalColumns: 0,
+	});
+	const [fileName, setFileName] = useState("");
+	const [fileRef, setFileRef] = useState(null);
 	const [prompt, setPrompt] = useState("");
 	const [error, setError] = useState("");
 
-	const headers = useMemo(() => (rows.length ? rows[0] : []), [rows]);
+	const headers = rows.length ? rows[0] : [];
 	const bodyRows = useMemo(
 		() => (rows.length > 1 ? rows.slice(1) : []),
 		[rows]
 	);
 
-	const parseCsv = (text) => {
+	const parseCsvPreview = (text) => {
 		const cleaned = text.trim();
-		if (!cleaned) return [];
-		return cleaned
-			.split(/\r?\n/)
-			.filter((line) => line.trim().length > 0)
-			.map((line) => line.split(",").map((cell) => cell.trim()));
-	};
-
-	const handleParse = () => {
-		try {
-			const parsed = parseCsv(csvText);
-			if (!parsed.length) {
-				setError("Please paste a CSV with at least a header row.");
-				setRows([]);
-				return;
-			}
-			setRows(parsed);
-			setError("");
-		} catch (e) {
-			setError("Could not parse CSV. Please check the format.");
-			setRows([]);
+		if (!cleaned) {
+			return [];
 		}
+
+		const lines = cleaned.split(/\r?\n/);
+		const nonEmptyLines = lines.filter((line) => line.trim().length > 0);
+
+		const previewLines = nonEmptyLines.slice(0, 31); // header + 30 rows
+		let maxCols = 0;
+
+		const previewRows = previewLines.map((line) => {
+			const cells = line.split(",").map((cell) => cell.trim());
+			maxCols = Math.max(maxCols, cells.length);
+			return cells.slice(0, 30); // limit to 30 columns
+		});
+
+		setDimensions(() => ({
+			totalRows: nonEmptyLines.length - 1,
+			totalColumns: maxCols,
+		}));
+
+		return previewRows;
 	};
 
 	const handleFile = (file) => {
 		if (!file) return;
+		setFileRef(file);
 		const reader = new FileReader();
 		reader.onload = (event) => {
-			setCsvText(event.target.result || "");
+			const text = event.target.result || "";
+			try {
+				const previewRows = parseCsvPreview(text);
+				if (!previewRows.length) {
+					setError("Uploaded CSV is empty or missing a header row.");
+					setRows([]);
+					setFileName("");
+					setFileRef(null);
+					return;
+				}
+				setRows(previewRows);
+				setFileName(file.name);
+				setError("");
+			} catch (e) {
+				setError("Could not parse CSV. Please check the format.");
+				setRows([]);
+				setFileName("");
+				setFileRef(null);
+				setDimensions(() => ({
+					totalRows: 0,
+					totalColumns: 0,
+				}));
+			}
 		};
 		reader.readAsText(file);
 	};
@@ -53,18 +82,18 @@ function App() {
 					<h1 className="text-3xl text-center font-semibold tracking-tight">
 						ModelPilot
 					</h1>
-					<p className="mt-2 text-slate-600">
+					<p className="mt-2 text-slate-600 text-center">
 						Paste or upload a CSV, preview it, and add optional context for the
 						LLM.
 					</p>
 				</header>
 
-				<section className="grid gap-6 lg:grid-cols-2">
+				<section className="flex gap-6 flex-col">
 					<div className="space-y-4">
 						<div className="flex items-center gap-3">
 							<label
 								htmlFor="csv-upload"
-									className="inline-flex cursor-pointer items-center gap-2 rounded border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-main-white-hover"
+								className="inline-flex cursor-pointer items-center gap-2 rounded border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-main-white-hover mx-auto"
 							>
 								<input
 									id="csv-upload"
@@ -75,34 +104,46 @@ function App() {
 								/>
 								<span>Upload CSV</span>
 							</label>
-							<button
-								type="button"
-								onClick={handleParse}
-								className="inline-flex items-center justify-center rounded bg-main-black px-4 py-2 text-sm font-semibold text-white hover:bg-main-black-hover"
-							>
-								Insert CSV
-							</button>
 						</div>
-
-						<textarea
-							value={csvText}
-							onChange={(e) => setCsvText(e.target.value)}
-							placeholder="Paste CSV data here..."
-							rows={12}
-							className="w-full rounded border border-slate-300 p-3 text-sm font-mono text-main-black focus:border-slate-500 focus:outline-none"
-						/>
+						{fileName && (
+							<p className="text-sm text-slate-600">
+								Uploaded: {fileName}
+								{fileRef?.size
+									? ` (${(fileRef.size / 1024).toFixed(1)} KB)`
+									: ""}
+							</p>
+						)}
+						{rows.length > 0 ? (
+							<p className="text-xs text-slate-500">
+								Preview limited to first 30 columns and 30 data rows for
+								performance.
+							</p>
+						) : (
+							<></>
+						)}
 
 						{error && <p className="text-sm text-rose-600">{error}</p>}
 					</div>
 
 					<div className="space-y-3">
-						<div className="flex items-center justify-between">
+						<div className="flex items-center justify-between mt-[-1rem]">
 							<h2 className="text-lg font-semibold">CSV Preview</h2>
-							<span className="text-sm text-slate-500">
-								{rows.length ? `${rows.length - 1} rows` : "No data yet"}
-							</span>
+							<div className="flex flex-col">
+								<span className="text-sm text-slate-500">
+									{rows.length ? `${dimensions.totalRows} rows` : "No data yet"}
+								</span>
+								<span className="text-sm text-slate-500">
+									{rows.length
+										? `${dimensions.totalColumns} columns`
+										: "No data yet"}
+								</span>
+							</div>
 						</div>
-						<div className="overflow-auto rounded border border-slate-200">
+						<div
+							className={`overflow-auto rounded border border-slate-200 ${
+								rows.length > 0 ? "h-80" : ""
+							}`}
+						>
 							<table className="min-w-full border-collapse text-sm">
 								<thead className="bg-main-white-hover">
 									<tr>

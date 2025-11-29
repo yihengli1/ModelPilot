@@ -1,19 +1,22 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { postCreate } from "../lib/service";
 
 function InputPage() {
-    const [rows, setRows] = useState([]);
-    const [dimensions, setDimensions] = useState({
-        totalRows: 0,
-        totalColumns: 0,
-    });
-    const [fileName, setFileName] = useState("");
-    const [fileRef, setFileRef] = useState(null);
-    const [prompt, setPrompt] = useState("");
-    const [error, setError] = useState("");
-    const [submitting, setSubmitting] = useState(false);
-    const [submitError, setSubmitError] = useState("");
-    const [result, setResult] = useState(null);
+	const [rows, setRows] = useState([]);
+	const [dimensions, setDimensions] = useState({
+		totalRows: 0,
+		totalColumns: 0,
+	});
+	const [fileName, setFileName] = useState("");
+	const [fileRef, setFileRef] = useState(null);
+	const [datasetText, setDatasetText] = useState("");
+	const [prompt, setPrompt] = useState("");
+	const [error, setError] = useState("");
+	const [submitting, setSubmitting] = useState(false);
+	const [submitError, setSubmitError] = useState("");
+	const [result, setResult] = useState(null);
+	const navigate = useNavigate();
 
     const headers = rows.length ? rows[0] : [];
     const bodyRows = useMemo(
@@ -47,34 +50,37 @@ function InputPage() {
         return previewRows;
     };
 
-    const handleFile = (file) => {
-        if (!file) return;
-        setFileRef(file);
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const text = event.target.result || "";
-            try {
-                const previewRows = parseCsvPreview(text);
-                if (!previewRows.length) {
-                    setError("Uploaded CSV is empty or missing a header row.");
-                    setRows([]);
-                    setFileName("");
-                    setFileRef(null);
-                    return;
-                }
-                setRows(previewRows);
-                setFileName(file.name);
-                setError("");
-            } catch (e) {
-                setError("Could not parse CSV. Please check the format.");
-                setRows([]);
-                setFileName("");
-                setFileRef(null);
-                setDimensions(() => ({
-                    totalRows: 0,
-                    totalColumns: 0,
-                }));
-            }
+	const handleFile = (file) => {
+		if (!file) return;
+		setFileRef(file);
+		const reader = new FileReader();
+		reader.onload = (event) => {
+			const text = event.target.result || "";
+			setDatasetText(text);
+			try {
+				const previewRows = parseCsvPreview(text);
+				if (!previewRows.length) {
+					setError("Uploaded CSV is empty or missing a header row.");
+					setRows([]);
+					setFileName("");
+					setFileRef(null);
+					setDatasetText("");
+					return;
+				}
+				setRows(previewRows);
+				setFileName(file.name);
+				setError("");
+			} catch (e) {
+				setError("Could not parse CSV. Please check the format.");
+				setRows([]);
+				setFileName("");
+				setFileRef(null);
+				setDatasetText("");
+				setDimensions(() => ({
+					totalRows: 0,
+					totalColumns: 0,
+				}));
+			}
         };
         reader.readAsText(file);
     };
@@ -84,17 +90,24 @@ function InputPage() {
             setSubmitError("Upload a CSV before generating a model.");
             return;
         }
-        setSubmitError("");
-        setSubmitting(true);
-        setResult(null);
-        try {
-            const data = postCreate(prompt, fileRef);
-            setResult(data);
-        } catch (err) {
-            setSubmitError(err.message || "Failed to generate model.");
-        } finally {
-            setSubmitting(false);
-        }
+		setSubmitError("");
+		setSubmitting(true);
+		setResult(null);
+		try {
+			const data = await postCreate(prompt, fileRef);
+			setResult(data);
+			navigate("/results", {
+				state: {
+					result: data,
+					datasetText,
+					dimensions,
+				},
+			});
+		} catch (err) {
+			setSubmitError(err.message || "Failed to generate model.");
+		} finally {
+			setSubmitting(false);
+		}
     };
 
     return (

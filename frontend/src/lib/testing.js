@@ -1,0 +1,71 @@
+export const fakeResultSmall = {
+	model: "RandomForestClassifier",
+	hyperparameters: {
+		n_estimators: 200,
+		max_depth: 12,
+		min_samples_split: 4,
+	},
+	metrics: {
+		training_error: 0.12,
+		validation_error: 0.18,
+		accuracy: 0.82,
+		f1: 0.80,
+	},
+	selected_features: ["age", "income", "churn_risk"],
+	training_split: "80%",
+	val_split: "20%",
+	notes: "Baseline random forest tuned for balanced classes.",
+	datasetText: `age,income,churn_risk,target
+29,45000,low,0
+41,72000,medium,1
+35,51000,low,0
+52,98000,high,1
+47,61000,medium,0`,
+	dimensions: {
+		totalRows: 5,
+		totalColumns: 4,
+	},
+};
+
+export const fakeResultLarge = {
+	model: "GradientBoostingRegressor",
+	hyperparameters: {
+		n_estimators: 500,
+		learning_rate: 0.05,
+		max_depth: 4,
+		subsample: 0.8,
+	},
+	metrics: {
+		training_error: 1.8,
+		validation_error: 2.4,
+		rmse: 2.4,
+		r2: 0.76,
+	},
+	selected_features: [
+		"feature_1",
+		"feature_2",
+		"feature_3",
+		"feature_4",
+		"feature_5",
+		"feature_6",
+		"feature_7",
+		"feature_8",
+		"feature_9",
+		"feature_10",
+		"feature_11",
+		"feature_12",
+	],
+	training_split: "70%",
+	val_split: "30%",
+	notes: "Regression model with moderate regularization.",
+	datasetText: `feature_1,feature_2,feature_3,feature_4,feature_5,target
+10.1,0.5,yes,12,1.2,101
+11.3,0.6,no,11,1.0,98
+9.8,0.4,yes,13,1.5,105
+12.5,0.7,no,10,1.1,99
+10.9,0.55,yes,12,1.3,102`,
+	dimensions: {
+		totalRows: 5,
+		totalColumns: 6,
+	},
+};

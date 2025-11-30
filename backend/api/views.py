@@ -1,44 +1,73 @@
+import csv
+import io
+from typing import List, Tuple
+
+import numpy as np
 from rest_framework import status, viewsets
-from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Run
-from .serializers import RunSerializer
-from .services import analyze_dataset, load_sample_dataset, load_sample_prompt
+from services import _coerce_value, parse_csv_to_matrix
 
 
-class RunViewSet(viewsets.ModelViewSet):
-    queryset = Run.objects.all()
-    serializer_class = RunSerializer
+class CreateRunView(APIView):
+    """Handle the POST from the frontend to parse a CSV and emit a numpy matrix."""
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+    def post(self, request):
+        dataset = request.data.get("dataset", "")
+        prompt = request.data.get("prompt", "")
+        context = request.data.get("context", "")
+        target_column = request.data.get("target_column", "")
 
-        results = analyze_dataset(
-            dataset=serializer.validated_data.get("dataset", ""),
-            prompt=serializer.validated_data.get("prompt", ""),
-            context=serializer.validated_data.get("context", ""),
-            target_column=serializer.validated_data.get("target_column", ""),
-        )
-        self.perform_create(serializer, results)
-        headers = self.get_success_headers(serializer.data)
-        payload = serializer.data
-        payload["results"] = results
-        return Response(payload, status=status.HTTP_201_CREATED, headers=headers)
+        try:
+            headers, rows, matrix = parse_csv_to_matrix(dataset)
+        except ValueError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception:
+            return Response(
+                {"error": "Failed to parse CSV content."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-    def perform_create(self, serializer, results):
-        serializer.save(results=results)
+        response_payload = {
+            "prompt": prompt,
+            "context": context,
+            "target_column": target_column,
+            "headers": headers,
+            "rows": rows,
+            "matrix": matrix.tolist(),
+            "shape": list(matrix.shape),
+            "model": "csv-parser",
+            "hyperparameters": {},
+            "metrics": {
+                "training_error": None,
+                "validation_error": None,
+            },
+            "selected_features": headers,
+            "training_split": None,
+            "val_split": None,
+            "optimizer": "n/a",
+            "notes": "Dataset parsed into a numpy matrix; no model training performed.",
+        }
 
-    @action(methods=["post"], detail=False, url_path="create")
-    def create_run(self, request, *args, **kwargs):
-        return self.create(request, *args, **kwargs)
+        return Response(response_payload, status=status.HTTP_200_OK)
+
+
+class RunViewSet(viewsets.ViewSet):
+    """
+    Minimal viewset placeholder for router compatibility.
+    Delegates creation to CreateRunView for consistent behavior.
+    """
+
+    def list(self, request):
+        return Response([])
+
+    def create(self, request):
+        return CreateRunView().post(request)
 
 
 class SampleDataView(APIView):
+    """Return a small canned payload to keep the existing sample route working."""
 
     def get(self, request):
-        return Response(
-            {"dataset": load_sample_dataset(), "prompt": load_sample_prompt()}
-        )
+        return Response({"message": "Sample endpoint", "data": []})

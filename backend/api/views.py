@@ -5,7 +5,7 @@ from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from services import _coerce_value, parse_csv_to_matrix
+from .services import _coerce_value, parse_csv_to_matrix
 
 
 class CreateRunView(APIView):
@@ -51,6 +51,14 @@ class CreateRunView(APIView):
         }
 
         return Response(response_payload, status=status.HTTP_200_OK)
+
+
+class RunViewSet(viewsets.ViewSet):
+    def list(self, request):
+        return Response([])
+
+    def create(self, request):
+        return CreateRunView().post(request)
 
 
 class SampleDataView(APIView):

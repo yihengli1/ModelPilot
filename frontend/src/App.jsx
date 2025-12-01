@@ -1,7 +1,9 @@
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import InputPage from "./components/InputPage";
 import ResultsPage from "./components/ResultsPage";
-import { fakeResultLarge, fakeResultSmall } from "./lib/testing";
+import testingData from "./lib/testing.json";
+
+const { fakeResultLarge, fakeResultSmall } = testingData;
 
 const ResultsRoute = () => {
 	const location = useLocation();

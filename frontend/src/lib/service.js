@@ -1,4 +1,4 @@
-import { testingContext } from "./context";
+import contexts from "./context.json";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE;
 
@@ -19,7 +19,7 @@ export const postCreate = async (prompt, fileRef) => {
 		body: JSON.stringify({
 			dataset,
 			prompt,
-			context: testingContext,
+			context: contexts.testingContext,
 		}),
 	});
 	if (!resp.ok) {

@@ -1,17 +1,22 @@
+import csv
+import io
+from typing import List, Tuple
+import numpy as np
+
 
 def _coerce_value(value):
     "string -> float"
     if value is None:
-        return None
+        return np.nan
     if isinstance(value, str):
         stripped = value.strip()
         if stripped == "":
-            return None
+            return np.nan
         value = stripped
     try:
         return float(value)
-    except (TypeError, ValueError):
-        return value
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"Value '{value}' cannot be converted to float.") from exc
 
 
 def parse_csv_to_matrix(raw_csv: str) -> Tuple[List[str], List[dict], np.ndarray]:
@@ -33,16 +38,14 @@ def parse_csv_to_matrix(raw_csv: str) -> Tuple[List[str], List[dict], np.ndarray
     data_rows = rows[1:]
 
     parsed_rows = [
-        {headers[i]: row[i] if i < len(
-            row) else "" for i in range(len(headers))}
+        {headers[i]: _coerce_value(row[i]) if i < len(row) else np.nan for i in range(len(headers))}
         for row in data_rows
     ]
 
     matrix_rows = [
-        [_coerce_value(row[i]) if i < len(
-            row) else None for i in range(len(headers))]
+        [_coerce_value(row[i]) if i < len(row) else np.nan for i in range(len(headers))]
         for row in data_rows
     ]
-    matrix = np.array(matrix_rows, dtype=object)
+    matrix = np.array(matrix_rows, dtype=float)
 
     return headers, parsed_rows, matrix

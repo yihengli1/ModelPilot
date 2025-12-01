@@ -1,3 +1,5 @@
+import { testingContext } from "./context";
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE;
 
 const readFullFile = (file) =>
@@ -17,8 +19,7 @@ export const postCreate = async (prompt, fileRef) => {
 		body: JSON.stringify({
 			dataset,
 			prompt,
-			context: "",
-			target_column: "",
+			context: testingContext,
 		}),
 	});
 	if (!resp.ok) {

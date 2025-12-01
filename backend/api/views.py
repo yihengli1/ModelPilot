@@ -1,5 +1,3 @@
-import csv
-import io
 from typing import List, Tuple
 
 import numpy as np
@@ -11,13 +9,14 @@ from services import _coerce_value, parse_csv_to_matrix
 
 
 class CreateRunView(APIView):
-    """Handle the POST from the frontend to parse a CSV and emit a numpy matrix."""
-
     def post(self, request):
         dataset = request.data.get("dataset", "")
         prompt = request.data.get("prompt", "")
         context = request.data.get("context", "")
-        target_column = request.data.get("target_column", "")
+
+        print("dataset", dataset)
+        print("prompt", prompt)
+        print("context", context)
 
         try:
             headers, rows, matrix = parse_csv_to_matrix(dataset)
@@ -29,10 +28,11 @@ class CreateRunView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        return Response([], status=status.HTTP_200_OK)
+
         response_payload = {
             "prompt": prompt,
             "context": context,
-            "target_column": target_column,
             "headers": headers,
             "rows": rows,
             "matrix": matrix.tolist(),
@@ -53,21 +53,7 @@ class CreateRunView(APIView):
         return Response(response_payload, status=status.HTTP_200_OK)
 
 
-class RunViewSet(viewsets.ViewSet):
-    """
-    Minimal viewset placeholder for router compatibility.
-    Delegates creation to CreateRunView for consistent behavior.
-    """
-
-    def list(self, request):
-        return Response([])
-
-    def create(self, request):
-        return CreateRunView().post(request)
-
-
 class SampleDataView(APIView):
-    """Return a small canned payload to keep the existing sample route working."""
 
     def get(self, request):
         return Response({"message": "Sample endpoint", "data": []})

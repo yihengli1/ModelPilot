@@ -1,64 +1,47 @@
-from typing import List, Tuple
-
-import numpy as np
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .services import _coerce_value, parse_csv_to_matrix
+from .contexts import SYSTEM_CONTEXT, TESTING_CONTEXT
+from .services import _coerce_value, parse_csv_to_matrix, generate_plan_from_gpt
 
 
 class CreateRunView(APIView):
     def post(self, request):
         dataset = request.data.get("dataset", "")
         prompt = request.data.get("prompt", "")
-        context = request.data.get("context", "")
 
-        print("dataset", dataset)
-        print("prompt", prompt)
-        print("context", context)
+        if not dataset.strip():
+            return Response({"error": "Dataset CSV cannot be empty."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            headers, rows, matrix = parse_csv_to_matrix(dataset)
+            llm_result = generate_plan_from_gpt(
+                system_context=TESTING_CONTEXT
+                prompt=prompt,
+                dataset=dataset,
+            )
         except ValueError as exc:
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except EnvironmentError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except ImportError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception:
             return Response(
-                {"error": "Failed to parse CSV content."},
-                status=status.HTTP_400_BAD_REQUEST,
+                {"error": "Failed to generate plan from LLM."},
+                status=status.HTTP_502_BAD_GATEWAY,
             )
-
-        return Response([], status=status.HTTP_200_OK)
 
         response_payload = {
             "prompt": prompt,
-            "context": context,
-            "headers": headers,
-            "rows": rows,
-            "matrix": matrix.tolist(),
-            "shape": list(matrix.shape),
-            "model": "csv-parser",
-            "hyperparameters": {},
-            "metrics": {
-                "training_error": None,
-                "validation_error": None,
-            },
-            "selected_features": headers,
-            "training_split": None,
-            "val_split": None,
-            "optimizer": "n/a",
-            "notes": "Dataset parsed into a numpy matrix; no model training performed.",
+            "context": TESTING_CONTEXT,
+            "dataset": dataset,
+            "llm_result": llm_result["parsed"],
+            "llm_raw": llm_result["raw"],
+            "llm_model": llm_result["model"],
         }
 
         return Response(response_payload, status=status.HTTP_200_OK)
-
-
-class RunViewSet(viewsets.ViewSet):
-    def list(self, request):
-        return Response([])
-
-    def create(self, request):
-        return CreateRunView().post(request)
 
 
 class SampleDataView(APIView):

@@ -62,16 +62,9 @@ def parse_csv_to_matrix(raw_csv: str) -> Tuple[List[str], List[dict], np.ndarray
 def generate_plan_from_gpt(
     *,
     system_context: str,
-    formatting_context: str,
     prompt: str,
     dataset: str,
-    user_context: str = "",
-    model_name: Optional[str] = None,
 ):
-    """
-    Send the dataset and prompt to the LLM using the provided contexts.
-    Returns a dict containing both the parsed JSON (if available) and the raw text.
-    """
     if not dataset or not dataset.strip():
         raise ValueError("Dataset CSV cannot be empty.")
 
@@ -80,10 +73,9 @@ def generate_plan_from_gpt(
         raise EnvironmentError("OPENAI_API_KEY is not set.")
 
     client = OpenAI(api_key=api_key, base_url=os.getenv("OPENAI_BASE_URL"))
-    model_to_use = model_name or os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    model_to_use = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
     user_message = f"""User prompt: {prompt or 'None provided.'}
-User context: {user_context or 'None provided.'}
 
 CSV dataset:
 {dataset}
@@ -91,7 +83,6 @@ CSV dataset:
 
     messages = [
         {"role": "system", "content": system_context},
-        {"role": "system", "content": formatting_context},
         {"role": "user", "content": user_message},
     ]
 
@@ -112,5 +103,4 @@ CSV dataset:
     return {
         "parsed": parsed,
         "raw": content,
-        "model": getattr(completion, "model", model_to_use),
     }

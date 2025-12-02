@@ -1,5 +1,8 @@
-Django>=5.0,<6.0
-djangorestframework>=3.15
+Django==5.2.8
+djangorestframework==3.16.1
 django-cors-headers>=4.4
-python-dotenv>=1.0
-openai>=1.30.0
+matplotlib==3.10.7
+numpy==2.3.5
+openai==2.8.1
+scipy==1.16.3
+python-dotenv==1.2.1

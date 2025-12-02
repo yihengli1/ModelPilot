@@ -1,5 +1,3 @@
-import contexts from "./context.json";
-
 const API_BASE_URL = import.meta.env.VITE_API_BASE;
 
 const readFullFile = (file) =>
@@ -13,13 +11,12 @@ const readFullFile = (file) =>
 export const postCreate = async (prompt, fileRef) => {
 	const dataset = await readFullFile(fileRef);
 
-	const resp = await fetch(`${API_BASE_URL}/runs/create/`, {
+	const resp = await fetch(`${API_BASE_URL}/run-prompt/`, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify({
 			dataset,
 			prompt,
-			context: contexts.testingContext,
 		}),
 	});
 	if (!resp.ok) {

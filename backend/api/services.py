@@ -65,15 +65,17 @@ def generate_plan_from_gpt(
     prompt: str,
     dataset: str,
 ):
+    print(prompt)
+    print(dataset)
     if not dataset or not dataset.strip():
         raise ValueError("Dataset CSV cannot be empty.")
 
     api_key = os.getenv("OPENAI_API_KEY")
+    model_key = os.getenv("OPENAI_MODEL", "gpt-4o")
     if not api_key:
         raise EnvironmentError("OPENAI_API_KEY is not set.")
 
-    client = OpenAI(api_key=api_key, base_url=os.getenv("OPENAI_BASE_URL"))
-    model_to_use = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    client = OpenAI(api_key=api_key)
 
     user_message = f"""User prompt: {prompt or 'None provided.'}
 
@@ -81,16 +83,24 @@ CSV dataset:
 {dataset}
 """.strip()
 
+    print(model_key)
+
     messages = [
         {"role": "system", "content": system_context},
         {"role": "user", "content": user_message},
     ]
+    try:
+        completion = client.chat.completions.create(
+            model=model_key,
+            messages=messages,
+            temperature=1,
+            response_format={"type": "json_object"},
+        )
+    except Exception as exc:
+        print(exc)
+        raise
 
-    completion = client.chat.completions.create(
-        model=model_to_use,
-        messages=messages,
-        temperature=0,
-    )
+    print("TEST")
     content = completion.choices[0].message.content
 
     try:
@@ -100,7 +110,4 @@ CSV dataset:
 
     print("content", parsed)
 
-    return {
-        "parsed": parsed,
-        "raw": content,
-    }
+    return parsed

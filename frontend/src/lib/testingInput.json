@@ -1,0 +1,6 @@
+{
+	"examplePrompts": [
+		"Dataset has columns date, account_id, balance, deposits, withdrawals, churned. Please confirm if this is suited for binary churn prediction and highlight any leakage risks from balance trends.",
+		"CSV includes user_id, session_count_30d, avg_session_time, clicks_cta, purchased. Validate if a classification model to predict purchase is appropriate and suggest which features need normalization or bucketing."
+	]
+}

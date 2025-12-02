@@ -16,7 +16,7 @@ class CreateRunView(APIView):
 
         try:
             llm_result = generate_plan_from_gpt(
-                system_context=TESTING_CONTEXT
+                system_context=TESTING_CONTEXT,
                 prompt=prompt,
                 dataset=dataset,
             )
@@ -36,9 +36,7 @@ class CreateRunView(APIView):
             "prompt": prompt,
             "context": TESTING_CONTEXT,
             "dataset": dataset,
-            "llm_result": llm_result["parsed"],
-            "llm_raw": llm_result["raw"],
-            "llm_model": llm_result["model"],
+            "llm_result": llm_result
         }
 
         return Response(response_payload, status=status.HTTP_200_OK)

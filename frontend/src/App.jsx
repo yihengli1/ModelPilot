@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import InputPage from "./components/InputPage";
 import ResultsPage from "./components/ResultsPage";
-import testingData from "./lib/testing.json";
+import testingData from "./lib/testingResult.json";
 
 const { fakeResultLarge, fakeResultSmall } = testingData;
 

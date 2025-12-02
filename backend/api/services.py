@@ -1,7 +1,12 @@
 import csv
 import io
-from typing import List, Tuple
+import json
+import os
+from typing import List, Optional, Tuple
+
 import numpy as np
+
+from openai import OpenAI
 
 
 def _coerce_value(value):
@@ -16,7 +21,8 @@ def _coerce_value(value):
     try:
         return float(value)
     except (TypeError, ValueError) as exc:
-        raise ValueError(f"Value '{value}' cannot be converted to float.") from exc
+        raise ValueError(
+            f"Value '{value}' cannot be converted to float.") from exc
 
 
 def parse_csv_to_matrix(raw_csv: str) -> Tuple[List[str], List[dict], np.ndarray]:
@@ -38,14 +44,73 @@ def parse_csv_to_matrix(raw_csv: str) -> Tuple[List[str], List[dict], np.ndarray
     data_rows = rows[1:]
 
     parsed_rows = [
-        {headers[i]: _coerce_value(row[i]) if i < len(row) else np.nan for i in range(len(headers))}
+        {headers[i]: _coerce_value(row[i]) if i < len(
+            row) else np.nan for i in range(len(headers))}
         for row in data_rows
     ]
 
     matrix_rows = [
-        [_coerce_value(row[i]) if i < len(row) else np.nan for i in range(len(headers))]
+        [_coerce_value(row[i]) if i < len(
+            row) else np.nan for i in range(len(headers))]
         for row in data_rows
     ]
     matrix = np.array(matrix_rows, dtype=float)
 
     return headers, parsed_rows, matrix
+
+
+def generate_plan_from_gpt(
+    *,
+    system_context: str,
+    formatting_context: str,
+    prompt: str,
+    dataset: str,
+    user_context: str = "",
+    model_name: Optional[str] = None,
+):
+    """
+    Send the dataset and prompt to the LLM using the provided contexts.
+    Returns a dict containing both the parsed JSON (if available) and the raw text.
+    """
+    if not dataset or not dataset.strip():
+        raise ValueError("Dataset CSV cannot be empty.")
+
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise EnvironmentError("OPENAI_API_KEY is not set.")
+
+    client = OpenAI(api_key=api_key, base_url=os.getenv("OPENAI_BASE_URL"))
+    model_to_use = model_name or os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+
+    user_message = f"""User prompt: {prompt or 'None provided.'}
+User context: {user_context or 'None provided.'}
+
+CSV dataset:
+{dataset}
+""".strip()
+
+    messages = [
+        {"role": "system", "content": system_context},
+        {"role": "system", "content": formatting_context},
+        {"role": "user", "content": user_message},
+    ]
+
+    completion = client.chat.completions.create(
+        model=model_to_use,
+        messages=messages,
+        temperature=0,
+    )
+    content = completion.choices[0].message.content
+
+    try:
+        parsed = json.loads(content)
+    except json.JSONDecodeError:
+        parsed = {"raw": content}
+
+    print("content", parsed)
+
+    return {
+        "parsed": parsed,
+        "raw": content,
+        "model": getattr(completion, "model", model_to_use),
+    }

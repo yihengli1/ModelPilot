@@ -9,8 +9,11 @@ from rest_framework.response import Response
 from .services import generate_plan_from_gpt
 
 
-def _select_target_index(dataset: np.ndarray, target_column: Any, headers: Optional[List[str]] = None) -> int:
-    total_cols = dataset.shape[1]
+def _select_target_index(target_column: Any, headers: Optional[List[str]] = None) -> int:
+    # -1 Unsupervised
+    # >= 0 Supervised
+    if target_column == "" or target_column is None:
+        return -1
     if isinstance(target_column, str):
         if headers:
             lowered = [h.lower() for h in headers]
@@ -26,39 +29,52 @@ def _split_dataset(
     data_split: Dict[str, Any],
     headers: Optional[List[str]] = None,
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, np.ndarray]:
-    target_idx = _select_target_index(dataset, target_column, headers)
-    y = dataset[:, target_idx]
-    X = np.delete(dataset, target_idx, axis=1)
+    target_idx = _select_target_index(target_column, headers)
 
+    if data_split is not None:
+        ratios = data_split.get("train_val_test")
+    if ratios is None:
+        ratios = [0.7, 0.15, 0.15]
+    ratios = np.array(ratios, dtype=float)
+    ratios = ratios / ratios.sum()  # safety
+
+    # Supervised
+    if target_idx != -1:
+        y = dataset[:, target_idx]
+        X = np.delete(dataset, target_idx, axis=1)
+        classes, y_encoded = np.unique(y, return_inverse=True)
+    # Unsupervised
+    else:
+        X = dataset
+        y_encoded = None
+        classes = np.array([])
     try:
         X_float = np.asarray(X, dtype=float)
     except (TypeError, ValueError) as exc:
         raise ValueError(
             "Features could not be converted to float for training.") from exc
 
-    classes, y_encoded = np.unique(y, return_inverse=True)
-
-    ratios = data_split.get("train_val_test") if data_split else None
-    if not ratios or len(ratios) != 3:
-        ratios = [0.7, 0.15, 0.15]
-    ratios = np.array(ratios, dtype=float)
-    ratios = ratios / ratios.sum()
-
-    n_samples = X_float.shape[0]
-    perm = torch.randperm(n_samples).numpy()
-    train_end = int(ratios[0] * n_samples)
-    val_end = train_end + int(ratios[1] * n_samples)
+    n, _ = X_float.shape
+    perm = torch.randperm(n).numpy()
+    train_end = int(ratios[0] * n)
+    val_end = train_end + int(ratios[1] * n)
 
     train_idx = perm[:train_end] if train_end > 0 else perm[:0]
     val_idx = perm[train_end:val_end] if val_end > train_end else perm[:0]
-    test_idx = perm[val_end:] if val_end < n_samples else perm[:0]
+    test_idx = perm[val_end:] if val_end < n else perm[:0]
 
     X_train = torch.tensor(X_float[train_idx], dtype=torch.float32)
-    y_train = torch.tensor(y_encoded[train_idx], dtype=torch.long)
     X_val = torch.tensor(X_float[val_idx], dtype=torch.float32)
-    y_val = torch.tensor(y_encoded[val_idx], dtype=torch.long)
     X_test = torch.tensor(X_float[test_idx], dtype=torch.float32)
-    y_test = torch.tensor(y_encoded[test_idx], dtype=torch.long)
+
+    if target_idx != -1:
+        y_train = torch.tensor(y_encoded[train_idx], dtype=torch.long)
+        y_val = torch.tensor(y_encoded[val_idx], dtype=torch.long)
+        y_test = torch.tensor(y_encoded[test_idx], dtype=torch.long)
+    else:
+        y_train = torch.empty(0, dtype=torch.long)
+        y_val = torch.empty(0, dtype=torch.long)
+        y_test = torch.empty(0, dtype=torch.long)
 
     return X_train, y_train, X_val, y_val, X_test, y_test, classes
 

@@ -24,6 +24,9 @@ class CreateRunView(APIView):
         dataset_matrix = validated_data["dataset_matrix"]
         prompt = validated_data.get("prompt", "")
 
+        print(dataset_matrix)
+        print(prompt)
+
         if dataset_matrix.size == 0:
             return Response({"error": "Dataset CSV cannot be empty."}, status=status.HTTP_400_BAD_REQUEST)
 

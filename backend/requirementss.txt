@@ -6,3 +6,4 @@ numpy>=2.3.5
 openai>=2.8.1
 scipy>=1.16.3
 python-dotenv>=1.2.1
+pandas>=2.3.3

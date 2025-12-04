@@ -1,81 +1,29 @@
+from openai import OpenAI
+import numpy as np
 import csv
 import io
 import json
 import os
 from typing import List, Optional, Tuple, Union
-
-import numpy as np
-
-from openai import OpenAI
+import pandas as pd
 
 
-def _coerce_value(value):
-    "string -> float"
-    if value is None:
-        return np.nan
-    if isinstance(value, str):
-        stripped = value.strip()
-        if stripped == "":
-            return np.nan
-        value = stripped
-    try:
-        return float(value)
-    except (TypeError, ValueError) as exc:
-        raise ValueError(
-            f"Value '{value}' cannot be converted to float.") from exc
-
-
-def parse_csv_to_matrix(raw_csv: str) -> Tuple[List[str], List[dict], np.ndarray]:
+def parse_csv_to_matrix(raw_csv: str):
     if not raw_csv.strip():
         raise ValueError("CSV content is empty.")
 
+    df = pd.read_csv(io.StringIO(raw_csv))
+
+    headers = df.columns.tolist()
+    parsed_rows = df.to_dict(orient="records")
+
+    # numeric matrix (fallback to object if needed)
     try:
-        sample = raw_csv[:1024]
-        dialect = csv.Sniffer().sniff(sample)
-    except csv.Error:
-        dialect = csv.excel
-
-    reader = csv.reader(io.StringIO(raw_csv), dialect)
-    rows = [row for row in reader if any(cell.strip() for cell in row)]
-    if not rows:
-        raise ValueError("CSV contains no data.")
-
-    headers = rows[0]
-    data_rows = rows[1:]
-
-    parsed_rows = [
-        {headers[i]: _coerce_value(row[i]) if i < len(
-            row) else np.nan for i in range(len(headers))}
-        for row in data_rows
-    ]
-
-    matrix_rows = [
-        [_coerce_value(row[i]) if i < len(
-            row) else np.nan for i in range(len(headers))]
-        for row in data_rows
-    ]
-    matrix = np.array(matrix_rows, dtype=float)
+        matrix = df.to_numpy(dtype=float)
+    except ValueError:
+        matrix = df.to_numpy(dtype=object)
 
     return headers, parsed_rows, matrix
-
-
-def training_pipeline():
-
-    # feature selection
-
-    # Hyperparameter initialization 1 Call
-
-    # Split Model, PyTorch training
-
-    # Based on results 2 call
-
-    # iterate over range of models/hyperparams/
-
-    # best validation error
-
-    # send back result
-
-    pass
 
 
 def generate_plan_from_gpt(

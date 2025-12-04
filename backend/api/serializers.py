@@ -11,8 +11,9 @@ class RunInputSerializer(serializers.Serializer):
     def validate(self, attrs):
         dataset = attrs.get("dataset", "")
         try:
-            _, _, matrix = parse_csv_to_matrix(dataset)
+            headers, _, matrix = parse_csv_to_matrix(dataset)
         except ValueError as exc:
             raise serializers.ValidationError({"dataset": str(exc)})
+        attrs["headers"] = headers
         attrs["dataset_matrix"] = matrix
         return attrs

@@ -1,5 +1,5 @@
 import math
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -9,23 +9,24 @@ from rest_framework.response import Response
 from .services import generate_plan_from_gpt
 
 
-def _select_target_index(dataset: np.ndarray, target_column: Any) -> int:
+def _select_target_index(dataset: np.ndarray, target_column: Any, headers: Optional[List[str]] = None) -> int:
     total_cols = dataset.shape[1]
+    if isinstance(target_column, str):
+        if headers:
+            lowered = [h.lower() for h in headers]
+            return lowered.index(target_column.lower())
     if isinstance(target_column, int):
-        return target_column % total_cols
-    try:
-        idx = int(target_column)
-        return idx % total_cols
-    except (TypeError, ValueError):
-        return total_cols - 1
+        return target_column
+    return Response("Target Column is not defined on a Supervised Learning Task")
 
 
 def _split_dataset(
     dataset: np.ndarray,
     target_column: Any,
     data_split: Dict[str, Any],
+    headers: Optional[List[str]] = None,
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, np.ndarray]:
-    target_idx = _select_target_index(dataset, target_column)
+    target_idx = _select_target_index(dataset, target_column, headers)
     y = dataset[:, target_idx]
     X = np.delete(dataset, target_idx, axis=1)
 
@@ -165,9 +166,10 @@ def train_and_evaluate_models(
     target_column: Any,
     model_plans: List[Dict[str, Any]],
     data_split: Dict[str, Any],
+    headers: Optional[List[str]] = None,
 ):
     X_train, y_train, X_val, y_val, X_test, y_test, classes = _split_dataset(
-        dataset, target_column, data_split)
+        dataset, target_column, data_split, headers=headers)
     results = []
 
     def serialize_artifact(model: Dict[str, Any], switch: str) -> Dict[str, Any]:
@@ -183,6 +185,7 @@ def train_and_evaluate_models(
     for plan in model_plans:
         switch = (plan.get("switch") or plan.get("model") or "").lower()
         try:
+            # Supervised
             if switch == "naive_bayes":
                 model = _train_gaussian_naive_bayes(X_train, y_train)
                 val_preds = _predict_gaussian_naive_bayes(
@@ -230,11 +233,11 @@ def train_and_evaluate_models(
     return results
 
 
-def training_pipeline(system_context, prompt, dataset: np.ndarray):
+def training_pipeline(system_context, prompt, dataset: np.ndarray, headers: Optional[List[str]] = None):
 
     # Initialization
-    llm_result = training_initialization(system_context, prompt, dataset)
-    problem_type, target_column, data_split, model_plans = parsing_initialization(
+    llm_result = _training_initialization(system_context, prompt, dataset)
+    problem_type, target_column, data_split, model_plans = _parsing_initialization(
         llm_result)
 
     # Feature Selection
@@ -242,7 +245,7 @@ def training_pipeline(system_context, prompt, dataset: np.ndarray):
     # Split Model, PyTorch training
 
     model_results = train_and_evaluate_models(
-        dataset, target_column, model_plans, data_split)
+        dataset, target_column, model_plans, data_split, headers=headers)
 
     # Based on results 2 call
 
@@ -262,7 +265,7 @@ def training_pipeline(system_context, prompt, dataset: np.ndarray):
     }
 
 
-def training_initialization(system_context, prompt, dataset):
+def _training_initialization(system_context, prompt, dataset):
     try:
         llm_result = generate_plan_from_gpt(
             system_context=system_context,
@@ -305,7 +308,7 @@ def training_initialization(system_context, prompt, dataset):
 # }
 
 
-def parsing_initialization(llm_result):
+def _parsing_initialization(llm_result):
     problem_type = llm_result.get("problem_type")
     target_column = llm_result.get("target_column")
     data_split = llm_result.get("data_split", {})

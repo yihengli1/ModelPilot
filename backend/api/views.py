@@ -22,8 +22,9 @@ class CreateRunView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         dataset_matrix = serializer.validated_data["dataset_matrix"]
+        headers = serializer.validated_data.get("headers")
         prompt = serializer.validated_data.get("prompt", "")
-        llm_result = training_pipeline(TESTING_CONTEXT, prompt, dataset_matrix)
+        llm_result = training_pipeline(TESTING_CONTEXT, prompt, dataset_matrix, headers=headers)
 
         response_payload = {
             "prompt": prompt,

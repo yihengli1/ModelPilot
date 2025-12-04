@@ -12,6 +12,17 @@ def parse_csv_to_matrix(raw_csv: str):
 
     df = pd.read_csv(io.StringIO(raw_csv))
 
+    # drop non numeric for now...
+    def is_numeric_series(s):
+        try:
+            pd.to_numeric(s.dropna(), errors="raise")
+            return True
+        except Exception:
+            return False
+
+    numeric_cols = [col for col in df.columns if is_numeric_series(df[col])]
+    df = df[numeric_cols]
+
     headers = df.columns.tolist()
     parsed_rows = df.to_dict(orient="records")
 

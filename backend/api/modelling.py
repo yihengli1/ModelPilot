@@ -1,15 +1,17 @@
 from .services import generate_plan_from_gpt
 from rest_framework import status
 from rest_framework.response import Response
+import numpy as np
 
 
-def training_pipeline(system_context, prompt, dataset):
+def training_pipeline(system_context, prompt, dataset: np.ndarray):
 
     # Hyperparameter initialization 1 Call
 
     llm_result = training_initialization(system_context, prompt, dataset)
 
-    parsing_initialization(llm_result)
+    problem_type, target_column, data_split, model_plans = parsing_initialization(
+        llm_result)
 
     # feature selection
 
@@ -92,9 +94,4 @@ def parsing_initialization(llm_result):
             }
         )
 
-    return {
-        problem_type,
-        target_column,
-        data_split,
-        model_plans
-    }
+    return problem_type, target_column, data_split, model_plans

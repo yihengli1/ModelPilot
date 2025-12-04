@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from .contexts import TESTING_CONTEXT
 from .serializers import RunInputSerializer
 from .services import generate_plan_from_gpt
-from .modelling import
+from .modelling import training_pipeline
 
 
 class CreateRunView(APIView):
@@ -21,19 +21,14 @@ class CreateRunView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        validated_data = serializer.validated_data
-        dataset_matrix = validated_data["dataset_matrix"]
-        prompt = validated_data.get("prompt", "")
-
-        print(dataset_matrix)
-        print(prompt)
-
+        dataset_matrix = serializer.validated_data["dataset_matrix"]
+        prompt = serializer.validated_data.get("prompt", "")
         llm_result = training_pipeline(TESTING_CONTEXT, prompt, dataset_matrix)
 
         response_payload = {
             "prompt": prompt,
             "context": TESTING_CONTEXT,
-            "dataset": validated_data.get("dataset", ""),
+            "dataset": request.data.get("dataset", ""),
             "llm_result": llm_result
         }
 

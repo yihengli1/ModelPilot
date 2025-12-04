@@ -238,7 +238,12 @@ Produce results in this JSON-like specification:
   "recommended_models": [
     {
       "model": "...",
-      "reasoning": "..."
+      "reasoning": "...",
+      "initial_hyperparameters": {
+          "param1": ...,
+          "param2": ...,
+          "etc": ...
+      }
     }
   ],
   "data_split": {
@@ -247,13 +252,6 @@ Produce results in this JSON-like specification:
     "stratify": "...",
     "grouping_column": "..."
   },
-  "initial_hyperparameters": {
-    "model_name": {
-      "param1": ...,
-      "param2": ...,
-      "etc": ...
-    }
-  }
 }
 
 

@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from .contexts import TESTING_CONTEXT
 from .serializers import RunInputSerializer
 from .services import generate_plan_from_gpt
+from .modelling import
 
 
 class CreateRunView(APIView):
@@ -27,26 +28,7 @@ class CreateRunView(APIView):
         print(dataset_matrix)
         print(prompt)
 
-        if dataset_matrix.size == 0:
-            return Response({"error": "Dataset CSV cannot be empty."}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            llm_result = generate_plan_from_gpt(
-                system_context=TESTING_CONTEXT,
-                prompt=prompt,
-                dataset=dataset_matrix,
-            )
-        except ValueError as exc:
-            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
-        except EnvironmentError as exc:
-            return Response({"error": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        except ImportError as exc:
-            return Response({"error": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        except Exception:
-            return Response(
-                {"error": "Failed to generate plan from LLM."},
-                status=status.HTTP_502_BAD_GATEWAY,
-            )
+        llm_result = training_pipeline(TESTING_CONTEXT, prompt, dataset_matrix)
 
         response_payload = {
             "prompt": prompt,

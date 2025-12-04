@@ -2,7 +2,7 @@ import csv
 import io
 import json
 import os
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -59,16 +59,40 @@ def parse_csv_to_matrix(raw_csv: str) -> Tuple[List[str], List[dict], np.ndarray
     return headers, parsed_rows, matrix
 
 
+def training_pipeline():
+
+    # feature selection
+
+    # Hyperparameter initialization 1 Call
+
+    # Split Model, PyTorch training
+
+    # Based on results 2 call
+
+    # iterate over range of models/hyperparams/
+
+    # best validation error
+
+    # send back result
+
+    pass
+
+
 def generate_plan_from_gpt(
     *,
     system_context: str,
     prompt: str,
-    dataset: str,
+    dataset: np.ndarray,
 ):
     print(prompt)
     print(dataset)
-    if not dataset or not dataset.strip():
-        raise ValueError("Dataset CSV cannot be empty.")
+
+    if isinstance(dataset, np.ndarray):
+        if dataset.size == 0:
+            raise ValueError("Dataset matrix cannot be empty.")
+        dataset_for_prompt = dataset.tolist()
+    else:
+        raise ValueError("Dataset must a numpy matrix.")
 
     api_key = os.getenv("OPENAI_API_KEY")
     model_key = os.getenv("OPENAI_MODEL", "gpt-4o")
@@ -80,7 +104,7 @@ def generate_plan_from_gpt(
     user_message = f"""User prompt: {prompt or 'None provided.'}
 
 CSV dataset:
-{dataset}
+{dataset_for_prompt}
 """.strip()
 
     print(model_key)

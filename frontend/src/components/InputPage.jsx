@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { postCreate } from "../lib/services";
 
 function InputPage() {
+	const MAX_COLUMNS = 50000;
+	const MAX_ROWS = 500000;
 	const [rows, setRows] = useState([]);
 	const [dimensions, setDimensions] = useState({
 		totalRows: 0,
@@ -24,14 +26,31 @@ function InputPage() {
 		[rows]
 	);
 
+	const resetFileState = () => {
+		setRows([]);
+		setFileName("");
+		setFileRef(null);
+		setDatasetText("");
+		setDimensions(() => ({
+			totalRows: 0,
+			totalColumns: 0,
+		}));
+	};
+
 	const parseCsvPreview = (text) => {
 		const cleaned = text.trim();
 		if (!cleaned) {
-			return [];
+			return { previewRows: [], totalRows: 0, totalColumns: 0 };
 		}
 
 		const lines = cleaned.split(/\r?\n/);
 		const nonEmptyLines = lines.filter((line) => line.trim().length > 0);
+		const headerCells =
+			nonEmptyLines.length > 0
+				? nonEmptyLines[0].split(",").map((cell) => cell.trim())
+				: [];
+		const totalColumns = headerCells.length;
+		const totalRows = Math.max(nonEmptyLines.length - 1, 0);
 
 		const previewLines = nonEmptyLines.slice(0, 31); // header + 30 rows
 		let maxCols = 0;
@@ -43,43 +62,40 @@ function InputPage() {
 		});
 
 		setDimensions(() => ({
-			totalRows: nonEmptyLines.length - 1,
-			totalColumns: maxCols,
+			totalRows,
+			totalColumns: Math.max(totalColumns, maxCols),
 		}));
 
-		return previewRows;
+		return { previewRows, totalRows, totalColumns };
 	};
 
 	const handleFile = (file) => {
 		if (!file) return;
-		setFileRef(file);
 		const reader = new FileReader();
 		reader.onload = (event) => {
 			const text = event.target.result || "";
-			setDatasetText(text);
 			try {
-				const previewRows = parseCsvPreview(text);
+				const { previewRows, totalRows, totalColumns } = parseCsvPreview(text);
 				if (!previewRows.length) {
 					setError("Uploaded CSV is empty or missing a header row.");
-					setRows([]);
-					setFileName("");
-					setFileRef(null);
-					setDatasetText("");
+					resetFileState();
 					return;
 				}
+				if (totalColumns > MAX_COLUMNS || totalRows > MAX_ROWS) {
+					setError(
+						`CSV too large. Limit is ${MAX_ROWS.toLocaleString()} rows and ${MAX_COLUMNS.toLocaleString()} columns.`
+					);
+					resetFileState();
+					return;
+				}
+				setDatasetText(text);
 				setRows(previewRows);
 				setFileName(file.name);
+				setFileRef(file);
 				setError("");
 			} catch (e) {
 				setError("Could not parse CSV. Please check the format.");
-				setRows([]);
-				setFileName("");
-				setFileRef(null);
-				setDatasetText("");
-				setDimensions(() => ({
-					totalRows: 0,
-					totalColumns: 0,
-				}));
+				resetFileState();
 			}
 		};
 		reader.readAsText(file);

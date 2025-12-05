@@ -256,12 +256,16 @@ def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] 
     target_name, selected_summaries, aggregated_stats = reduce_features(
         headers, dataset, prompt)
 
+    print("test")
+
     # # Initialization
-    # llm_result = generate_plan_gpt(
-    #     prompt=prompt,
-    #     summaries=selected_summaries,
-    #     target_name=target_name,
-    # )
+    llm_result = generate_plan_gpt(
+        prompt=prompt,
+        summaries=selected_summaries,
+        target_name=target_name,
+    )
+
+    print("finish")
 
     # problem_type, target_column, data_split, model_plans = _parsing_initialization(
     #     llm_result)
@@ -281,7 +285,7 @@ def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] 
 
     # send back result
 
-    return "test"
+    return llm_result
 
     # return {
     #     "problem_type": problem_type,

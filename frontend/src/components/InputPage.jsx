@@ -17,7 +17,6 @@ function InputPage() {
 	const [error, setError] = useState("");
 	const [submitting, setSubmitting] = useState(false);
 	const [submitError, setSubmitError] = useState("");
-	const [result, setResult] = useState(null);
 	const navigate = useNavigate();
 
 	const headers = rows.length ? rows[0] : [];
@@ -108,10 +107,9 @@ function InputPage() {
 		}
 		setSubmitError("");
 		setSubmitting(true);
-		setResult(null);
 		try {
 			const data = await postCreate(prompt, fileRef);
-			setResult(data);
+
 			console.log(data);
 			// navigate("/results", {
 			// 	state: {
@@ -270,16 +268,8 @@ function InputPage() {
 				</div>
 
 				{submitError && (
-					<p className="mt-2 text-sm text-center text-rose-600">
+					<div className="mt-4 rounded border border-rose-600 bg-rose-50 p-3 text-center text-sm text-rose-700">
 						{submitError}
-					</p>
-				)}
-				{result && (
-					<div className="mt-4 rounded border border-slate-200 bg-main-white-hover p-4 text-sm">
-						<p className="font-semibold mb-2">Response</p>
-						<pre className="whitespace-pre-wrap break-words text-xs text-main-black-hover">
-							{JSON.stringify(result, null, 2)}
-						</pre>
 					</div>
 				)}
 			</div>

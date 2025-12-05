@@ -110,16 +110,16 @@ def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] 
     # TODO:
 
     # Data Prep
-    # print("Preparing Datasets")
-    # X_train, y_train, X_val, y_val, X_test, y_test, classes = prepare_datasets(
-    #     dataset, target_column, data_split, headers)
+    print("Preparing Datasets")
+    X_train, y_train, X_val, y_val, X_test, y_test, classes = prepare_datasets(
+        dataset, target_column, data_split, headers)
 
     # # Split Model, PyTorch training
-    # print("Running Initial Model")
-    # initial_results = execute_training_cycle(
-    #     X_train, y_train, X_val, y_val, X_test, y_test, classes,
-    #     model_plans
-    # )
+    print("Running Initial Model")
+    initial_results = execute_training_cycle(
+        X_train, y_train, X_val, y_val, X_test, y_test, classes,
+        model_plans
+    )
 
     # Based on results 2 call
 
@@ -129,7 +129,7 @@ def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] 
 
     # send back result
 
-    return llm_result
+    return llm_result, initial_results
 
     # return {
     #     "problem_type": problem_type,

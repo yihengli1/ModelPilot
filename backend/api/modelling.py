@@ -256,9 +256,7 @@ def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] 
     target_name, selected_summaries, aggregated_stats = reduce_features(
         headers, dataset, prompt)
 
-    print("test")
-
-    # # Initialization
+    # Initialization
     llm_result = generate_plan_gpt(
         prompt=prompt,
         summaries=selected_summaries,

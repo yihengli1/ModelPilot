@@ -78,6 +78,13 @@ def generate_plan_gpt(
         print(exc)
         raise
 
+    usage_data = completion.usage
+
+    print("--- Token Usage Plan ---")
+    print(f"Prompt Tokens: {usage_data.prompt_tokens}")
+    print(f"Total Tokens: {usage_data.total_tokens}")
+    print("-------------------")
+
     content = completion.choices[0].message.content
     parsed = json.loads(content)
 
@@ -129,6 +136,12 @@ def generate_target_gpt(
     if target_column.upper() == "NONE" or target_column not in headers:
         return None
 
+    usage_data = completion.usage
+    print("--- Token Usage Plan ---")
+    print(f"Prompt Tokens: {usage_data.prompt_tokens}")
+    print(f"Total Tokens: {usage_data.total_tokens}")
+    print("-------------------")
+
     return target_column
 
 
@@ -162,14 +175,14 @@ def summarize_and_select_features(
             "role": "Target" if col_name == target_name else "Feature",
             "inferred_type": inferred_type,
             "total_count": len(series),
-            "missing_ratio": series.isnull().sum() / len(series)
+            "missing_ratio": float(series.isnull().sum() / len(series))
         }
 
         if inferred_type == 'numeric':
-            summary["mean"] = series.mean()
-            summary["std"] = series.std()
-            summary["min"] = series.min()
-            summary["max"] = series.max()
+            summary["mean"] = float(series.mean())
+            summary["std"] = float(series.std())
+            summary["min"] = float(series.min())
+            summary["max"] = float(series.max())
         elif inferred_type == 'categorical':
             summary["top_5_values"] = series.value_counts().nlargest(
                 5).index.tolist()
@@ -196,7 +209,7 @@ def summarize_and_select_features(
         "total_features": total_features,
         "features_sampled_for_summary": len(selected_summaries),
         "features_unsampled": unsampled_features_count,
-        "overall_sparsity_ratio": (df.isnull().sum().sum() / (df.shape[0] * df.shape[1]))
+        "overall_sparsity_ratio": df.isnull().sum().sum() / (df.shape[0] * df.shape[1])
     }
 
     return selected_summaries, aggregated_stats

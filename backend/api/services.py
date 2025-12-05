@@ -6,6 +6,8 @@ import os
 import pandas as pd
 import random
 
+from .contexts import TESTING_CONTEXT, TARGET_COLUMN_SYSTEM_CONTEXT
+
 
 def parse_csv_to_matrix(raw_csv: str):
     if not raw_csv.strip():
@@ -36,39 +38,33 @@ def parse_csv_to_matrix(raw_csv: str):
     return headers, parsed_rows, matrix
 
 
-def generate_plan_from_gpt(
+def generate_plan_gpt(
     *,
-    system_context: str,
-    prompt: str,
-    dataset: np.ndarray,
+    prompt,
+    summaries,
+    target_name,
+
 ):
-    print(prompt)
-    print(dataset)
-
-    if isinstance(dataset, np.ndarray):
-        if dataset.size == 0:
-            raise ValueError("Dataset matrix cannot be empty.")
-        dataset_for_prompt = dataset.tolist()
-    else:
-        raise ValueError("Dataset must a numpy matrix.")
-
     api_key = os.getenv("OPENAI_API_KEY")
-    model_key = os.getenv("OPENAI_MODEL", "gpt-4o")
+    model_key = os.getenv("OPENAI_MODEL", "gpt-5-mini")
     if not api_key:
         raise EnvironmentError("OPENAI_API_KEY is not set.")
 
     client = OpenAI(api_key=api_key)
 
-    user_message = f"""User prompt: {prompt or 'None provided.'}
+    user_message = f"""
+###USER PROMPT:
+{prompt or 'None provided.'}
 
-CSV dataset:
-{dataset_for_prompt}
+###SUMMARY LIST:
+{summaries}
+
+###TARGET NAME:
+{target_name}
 """.strip()
 
-    print(model_key)
-
     messages = [
-        {"role": "system", "content": system_context},
+        {"role": "system", "content": TESTING_CONTEXT},
         {"role": "user", "content": user_message},
     ]
     try:
@@ -82,17 +78,58 @@ CSV dataset:
         print(exc)
         raise
 
-    print("TEST")
     content = completion.choices[0].message.content
-
-    try:
-        parsed = json.loads(content)
-    except json.JSONDecodeError:
-        parsed = {"raw": content}
-
-    print("content", parsed)
+    parsed = json.loads(content)
 
     return parsed
+
+
+def generate_target_gpt(
+    *,
+    user_prompt,
+    headers,
+):
+    if not user_prompt:
+        return None
+
+    api_key = os.getenv("OPENAI_API_KEY")
+    model_key = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+
+    if not api_key:
+        raise EnvironmentError("OPENAI_API_KEY is not set.")
+
+    client = OpenAI(api_key=api_key)
+    prompt_with_headers = f"""
+    ### CANDIDATE COLUMNS
+    {headers}
+
+    ### USER INTENT
+    {user_prompt}
+    """
+
+    messages = [
+        {"role": "system", "content": TARGET_COLUMN_SYSTEM_CONTEXT},
+        {"role": "user", "content": prompt_with_headers},
+    ]
+
+    try:
+        completion = client.chat.completions.create(
+            model=model_key,
+            messages=messages,
+            temperature=0.0,
+            max_tokens=50
+        )
+    except Exception as exc:
+        print(exc)
+        raise
+    content = completion.choices[0].message.content
+
+    target_column = content.strip().strip('"').strip("'")
+
+    if target_column.upper() == "NONE" or target_column not in headers:
+        return None
+
+    return target_column
 
 
 def summarize_and_select_features(
@@ -103,9 +140,10 @@ def summarize_and_select_features(
     if not headers or not dataset_matrix:
         return [], {}
     df = pd.DataFrame(dataset_matrix, columns=headers)
-    all_summaries = []
+    MAX_FEATURES_TO_SAMPLE = 50
 
-    MAX_FEATURES_TO_SAMPLE = 100
+    selected_summaries = []
+    remaining_summaries = []
 
     for col_name in headers:
         series = df[col_name]
@@ -136,13 +174,7 @@ def summarize_and_select_features(
             summary["top_5_values"] = series.value_counts().nlargest(
                 5).index.tolist()
 
-        all_summaries.append(summary)
-
-    selected_summaries = []
-    remaining_summaries = []
-
-    for summary in all_summaries:
-        if summary['name'] == target_name:
+        if col_name == target_name:
             selected_summaries.append(summary)
         else:
             remaining_summaries.append(summary)
@@ -157,21 +189,13 @@ def summarize_and_select_features(
         selected_summaries.extend(remaining_summaries)
         unsampled_features_count = 0
 
-    # Calculate overall stats for context
     total_features = len(headers)
-    numeric_count = df.select_dtypes(include=['number']).shape[1]
-    categorical_count = df.select_dtypes(
-        include=['object', 'category']).shape[1]
 
     aggregated_stats = {
         "dataset_shape": f"({df.shape[0]} rows, {df.shape[1]} columns)",
         "total_features": total_features,
         "features_sampled_for_summary": len(selected_summaries),
         "features_unsampled": unsampled_features_count,
-        "type_breakdown": {
-            "numeric": numeric_count,
-            "categorical_or_text": categorical_count
-        },
         "overall_sparsity_ratio": (df.isnull().sum().sum() / (df.shape[0] * df.shape[1]))
     }
 

@@ -6,7 +6,7 @@ import torch
 from rest_framework import status
 from rest_framework.response import Response
 
-from .services import generate_plan_from_gpt
+from .services import generate_plan_gpt, generate_target_gpt, summarize_and_select_features
 
 
 def _select_target_index(target_column: Any, headers: Optional[List[str]] = None) -> int:
@@ -249,10 +249,18 @@ def train_and_evaluate_models(
     return results
 
 
-def training_pipeline(system_context, prompt, dataset: np.ndarray, headers: Optional[List[str]] = None):
+def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] = None):
+
+    # Sharp Feature Selection for LLM/Target Column identification
+
+    target_name, selected_summaries, aggregated_stats = reduce_features(
+        headers, dataset, prompt)
 
     # Initialization
-    llm_result = _training_initialization(system_context, prompt, dataset)
+
+    llm_result = _training_initialization(
+        prompt, selected_summaries, target_name)
+
     problem_type, target_column, data_split, model_plans = _parsing_initialization(
         llm_result)
 
@@ -260,8 +268,8 @@ def training_pipeline(system_context, prompt, dataset: np.ndarray, headers: Opti
 
     # Split Model, PyTorch training
 
-    model_results = train_and_evaluate_models(
-        dataset, target_column, model_plans, data_split, headers=headers)
+    # model_results = train_and_evaluate_models(
+    #     dataset, target_column, model_plans, data_split, headers=headers)
 
     # Based on results 2 call
 
@@ -276,17 +284,27 @@ def training_pipeline(system_context, prompt, dataset: np.ndarray, headers: Opti
         "target_column": target_column,
         "data_split": data_split,
         "models": model_plans,
-        "model_results": model_results,
+        # "model_results": model_results,
         "raw_llm_result": llm_result,
     }
 
 
-def _training_initialization(system_context, prompt, dataset):
+def reduce_features(headers, dataset, prompt):
+    target_name = generate_target_gpt(prompt, headers)
+    return target_name, summarize_and_select_features(
+        headers,
+        dataset,
+        target_name=target_name
+    )
+
+
+def _training_initialization(prompt, summaries, target_name):
     try:
-        llm_result = generate_plan_from_gpt(
-            system_context=system_context,
+
+        llm_result = generate_plan_gpt(
             prompt=prompt,
-            dataset=dataset,
+            summaries=summaries,
+            target_name=target_name,
         )
     except ValueError as exc:
         return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)

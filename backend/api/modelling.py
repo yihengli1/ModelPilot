@@ -83,37 +83,10 @@ def _split_dataset(
     return X_train, y_train, X_val, y_val, X_test, y_test, classes
 
 
-def _accuracy(preds: torch.Tensor, targets: torch.Tensor) -> float:
-    if targets.numel() == 0:
-        return float("nan")
-    correct = (preds == targets).sum().item()
-    return correct / targets.numel()
-
-
 def to_numpy(x):
     if hasattr(x, 'numpy'):
         return x.numpy()
     return np.array(x)
-
-
-def serialize_artifact(model, switch) -> Dict[str, Any]:
-    try:
-        if switch == "naive_bayes":
-            return {
-                "classes": model.classes_.tolist(),
-                "means": model.theta_.tolist(),
-                "vars": model.var_.tolist(),
-            }
-        elif switch == "decision_tree":
-            return {
-                "feature_importances": model.feature_importances_.tolist(),
-                "n_features": model.n_features_in_,
-                "depth": model.get_depth(),
-                "n_leaves": model.get_n_leaves(),
-            }
-    except Exception:
-        return {"error": "Could not serialize model artifact"}
-    return {}
 
 
 def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] = None):
@@ -123,6 +96,7 @@ def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] 
         headers, dataset, prompt)
 
     # Initialization
+    print("Generating Initial Plan")
     llm_result = generate_plan_gpt(
         prompt=prompt,
         summaries=selected_summaries,
@@ -136,16 +110,16 @@ def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] 
     # TODO:
 
     # Data Prep
+    # print("Preparing Datasets")
+    # X_train, y_train, X_val, y_val, X_test, y_test, classes = prepare_datasets(
+    #     dataset, target_column, data_split, headers)
 
-    X_train, y_train, X_val, y_val, X_test, y_test, classes = prepare_datasets(
-        dataset, target_column, data_split, headers)
-
-    # Split Model, PyTorch training
-    print("Running Initial Model")
-    initial_results = execute_training_cycle(
-        X_train, y_train, X_val, y_val, X_test, y_test, classes,
-        model_plans
-    )
+    # # Split Model, PyTorch training
+    # print("Running Initial Model")
+    # initial_results = execute_training_cycle(
+    #     X_train, y_train, X_val, y_val, X_test, y_test, classes,
+    #     model_plans
+    # )
 
     # Based on results 2 call
 
@@ -265,19 +239,12 @@ def execute_training_cycle(
 
             clf.fit(X_train, y_train)
 
-            # Evaluation
             val_acc = accuracy_score(y_val, clf.predict(
-                X_val)) if len(X_val) > 0 else 0.0
+                X_val))
             test_acc = accuracy_score(y_test, clf.predict(
-                X_test)) if len(X_test) > 0 else 0.0
+                X_test))
 
-            # Artifact Serialization
-            artifact = {}
-            if model == "decision_tree":
-                artifact = {
-                    "depth": clf.get_depth(),
-                    "n_features": clf.n_features_in_
-                }
+            artifact = serialize_artifact(clf, model)
 
             results.append({
                 "model": model,
@@ -291,3 +258,23 @@ def execute_training_cycle(
             results.append({"model": model, "error": str(exc)})
 
     return results
+
+
+def serialize_artifact(classifier, model):
+    try:
+        if model == "naive_bayes":
+            return {
+                "classes": classifier.classes_.tolist(),
+                "means": classifier.theta_.tolist(),
+                "vars": classifier.var_.tolist(),
+            }
+        elif model == "decision_tree":
+            return {
+                "n_features": classifier.n_features_in_,
+                "depth": classifier.get_depth(),
+                "n_leaves": classifier.get_n_leaves(),
+            }
+        else:
+            return {}
+    except Exception:
+        return {"error": "Could not serialize model artifact"}

@@ -21,7 +21,7 @@ function ResultsPage() {
 	const { result, datasetText, dimensions } = state;
 
 	const initial_results = result.initial_results;
-	const llm_results = result.initial_results;
+	const llm_results = result.llm_result;
 	const totalModels = initial_results.length;
 
 	if (totalModels === 0) {
@@ -82,13 +82,16 @@ function ResultsPage() {
 
 				<section className="relative mb-10">
 					<div className="flex items-center gap-4">
-						<button
-							onClick={handlePrev}
-							className="hidden md:flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-900 shadow-sm transition-all"
-							disabled={totalModels <= 1}
-						>
-							&larr;
-						</button>
+						{totalModels > 1 ? (
+							<button
+								onClick={handlePrev}
+								className="hidden md:flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-900 shadow-sm transition-all"
+							>
+								&larr;
+							</button>
+						) : (
+							<></>
+						)}
 
 						<div className="flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg transition-all">
 							<div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4 flex flex-wrap justify-between items-center gap-4">
@@ -108,7 +111,6 @@ function ResultsPage() {
 									)}
 								</div>
 
-								{/* Key Metrics Display */}
 								<div className="flex gap-8">
 									<div className="text-center">
 										<p className="text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -129,9 +131,7 @@ function ResultsPage() {
 								</div>
 							</div>
 
-							{/* Card Body */}
 							<div className="p-6 grid gap-8 md:grid-cols-2">
-								{/* Column 1: Hyperparameters */}
 								<div className="space-y-4">
 									<h3 className="text-sm font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100 pb-2">
 										Hyperparameters
@@ -162,7 +162,6 @@ function ResultsPage() {
 									)}
 								</div>
 
-								{/* Column 2: Artifacts/Metadata */}
 								<div className="space-y-4">
 									<h3 className="text-sm font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100 pb-2">
 										Model Internals
@@ -187,7 +186,6 @@ function ResultsPage() {
 													</li>
 												);
 											})}
-											{/* Special handling for large arrays like classes */}
 											{currentModel.artifact.classes &&
 												currentModel.artifact.classes.length > 5 && (
 													<li className="flex justify-between items-center">
@@ -209,7 +207,6 @@ function ResultsPage() {
 								</div>
 							</div>
 
-							{/* Error Box inside Card */}
 							{currentModel.error && (
 								<div className="bg-red-50 border-t border-red-100 p-4 text-sm text-red-800">
 									<span className="font-bold">Error Details: </span>{" "}
@@ -218,36 +215,39 @@ function ResultsPage() {
 							)}
 						</div>
 
-						{/* NEXT BUTTON */}
-						<button
-							onClick={handleNext}
-							className="hidden md:flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-900 shadow-sm transition-all"
-							disabled={totalModels <= 1}
-						>
-							&rarr;
-						</button>
+						{totalModels > 1 ? (
+							<button
+								onClick={handleNext}
+								className="hidden md:flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-900 shadow-sm transition-all"
+							>
+								&rarr;
+							</button>
+						) : (
+							<></>
+						)}
 					</div>
 
-					{/* Mobile Navigation (visible only on small screens) */}
-					<div className="mt-4 flex justify-center gap-4 md:hidden">
-						<button
-							onClick={handlePrev}
-							className="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50"
-						>
-							Previous
-						</button>
-						<button
-							onClick={handleNext}
-							className="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50"
-						>
-							Next
-						</button>
-					</div>
+					{totalModels > 1 ? (
+						<div className="mt-4 flex justify-center gap-4 md:hidden">
+							<button
+								onClick={handlePrev}
+								className="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50"
+							>
+								Previous
+							</button>
+							<button
+								onClick={handleNext}
+								className="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50"
+							>
+								Next
+							</button>
+						</div>
+					) : (
+						<></>
+					)}
 				</section>
 
-				{/* --- DATASET INFO SECTION --- */}
 				<section className="grid gap-6 md:grid-cols-2">
-					{/* Dataset Snapshot */}
 					<div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
 						<h2 className="text-lg font-bold text-slate-900 mb-3">
 							Dataset Snapshot
@@ -259,7 +259,6 @@ function ResultsPage() {
 						</div>
 					</div>
 
-					{/* Metadata */}
 					<div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
 						<h2 className="text-lg font-bold text-slate-900 mb-3">
 							Pipeline Metadata

@@ -4,7 +4,6 @@ from rest_framework.views import APIView
 
 from .contexts import TESTING_CONTEXT
 from .serializers import RunInputSerializer
-from .services import generate_plan_from_gpt
 from .modelling import training_pipeline
 
 

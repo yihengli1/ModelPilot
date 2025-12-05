@@ -256,13 +256,15 @@ def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] 
     target_name, selected_summaries, aggregated_stats = reduce_features(
         headers, dataset, prompt)
 
-    # Initialization
+    # # Initialization
+    # llm_result = generate_plan_gpt(
+    #     prompt=prompt,
+    #     summaries=selected_summaries,
+    #     target_name=target_name,
+    # )
 
-    llm_result = _training_initialization(
-        prompt, selected_summaries, target_name)
-
-    problem_type, target_column, data_split, model_plans = _parsing_initialization(
-        llm_result)
+    # problem_type, target_column, data_split, model_plans = _parsing_initialization(
+    #     llm_result)
 
     # Feature Selection
 
@@ -279,45 +281,29 @@ def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] 
 
     # send back result
 
-    return {
-        "problem_type": problem_type,
-        "target_column": target_column,
-        "data_split": data_split,
-        "models": model_plans,
-        # "model_results": model_results,
-        "raw_llm_result": llm_result,
-    }
+    return "test"
+
+    # return {
+    #     "problem_type": problem_type,
+    #     "target_column": target_column,
+    #     "data_split": data_split,
+    #     "models": model_plans,
+    #     # "model_results": model_results,
+    #     "raw_llm_result": llm_result,
+    # }
 
 
 def reduce_features(headers, dataset, prompt):
-    target_name = generate_target_gpt(prompt, headers)
-    return target_name, summarize_and_select_features(
+    target_name = generate_target_gpt(user_prompt=prompt, headers=headers)
+
+    selected_summaries, aggregated_stats = summarize_and_select_features(
         headers,
         dataset,
         target_name=target_name
     )
 
+    return target_name, selected_summaries, aggregated_stats
 
-def _training_initialization(prompt, summaries, target_name):
-    try:
-
-        llm_result = generate_plan_gpt(
-            prompt=prompt,
-            summaries=summaries,
-            target_name=target_name,
-        )
-    except ValueError as exc:
-        return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
-    except EnvironmentError as exc:
-        return Response({"error": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    except ImportError as exc:
-        return Response({"error": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    except Exception:
-        return Response(
-            {"error": "Failed to generate plan from LLM."},
-            status=status.HTTP_502_BAD_GATEWAY,
-        )
-    return llm_result
 # Output Example
 # {
 #   "problem_type": "...",

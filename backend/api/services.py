@@ -137,8 +137,8 @@ def summarize_and_select_features(
     dataset_matrix,
     target_name
 ):
-    if not headers or not dataset_matrix:
-        return [], {}
+    if not headers or dataset_matrix.size == 0:
+        raise NameError("Dataset or Headers is empty")
     df = pd.DataFrame(dataset_matrix, columns=headers)
     MAX_FEATURES_TO_SAMPLE = 50
 

@@ -24,14 +24,14 @@ function App() {
 			<Routes>
 				<Route path="/" element={<InputPage />} />
 				<Route path="/results" element={<ResultsRoute />} />
-				<Route
+				{/* <Route
 					path="/testing1"
-					element={<ResultsPage result={fakeResultSmall} />}
+					element={<ResultsPage state={fakeResultSmall} />}
 				/>
 				<Route
 					path="/testing2"
-					element={<ResultsPage result={fakeResultLarge} />}
-				/>
+					element={<ResultsPage state={fakeResultLarge} />}
+				/> */}
 			</Routes>
 		</BrowserRouter>
 	);

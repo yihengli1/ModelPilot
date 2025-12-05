@@ -24,14 +24,13 @@ Infer the best choice based on:
 Propose valid scikit-learn hyperparameters. You are RESTRICTED to the following keys only:
 
 For 'decision_tree':
-   - "criterion": ("gini", "entropy", "log_loss")
    - "max_depth": (int or null)
    - "min_samples_split": (int or float)
    - "min_samples_leaf": (int or float)
    - "max_features": ("sqrt", "log2", null)
 
 For 'naive_bayes':
-   - "var_smoothing": (float, e.g., 1e-9)
+   - N/A
 
 DO NOT generate parameters outside this list (e.g., do not use 'learning_rate' or 'n_estimators').
 

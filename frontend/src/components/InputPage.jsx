@@ -111,13 +111,13 @@ function InputPage() {
 			const data = await postCreate(prompt, fileRef);
 
 			console.log(data);
-			// navigate("/results", {
-			// 	state: {
-			// 		result: data,
-			// 		datasetText,
-			// 		dimensions,
-			// 	},
-			// });
+			navigate("/results", {
+				state: {
+					result: data,
+					datasetText,
+					dimensions,
+				},
+			});
 		} catch (err) {
 			setSubmitError(err.message || "Failed to generate model.");
 		} finally {

@@ -1,68 +1,83 @@
 {
-  "fakeResultSmall": {
-    "model": "RandomForestClassifier",
-    "hyperparameters": {
-      "n_estimators": 200,
-      "max_depth": 12,
-      "min_samples_split": 4
-    },
-    "metrics": {
-      "training_error": 0.12,
-      "validation_error": 0.18,
-      "accuracy": 0.82,
-      "f1": 0.8
-    },
-    "selected_features": [
-      "age",
-      "income",
-      "churn_risk"
-    ],
-    "training_split": "80%",
-    "val_split": "20%",
-    "notes": "Baseline random forest tuned for balanced classes.",
-    "datasetText": "age,income,churn_risk,target\n29,45000,low,0\n41,72000,medium,1\n35,51000,low,0\n52,98000,high,1\n47,61000,medium,0",
-    "dimensions": {
-      "totalRows": 5,
-      "totalColumns": 4
-    },
-    "optimizer": "Stochastic Gradient Descent"
-  },
-  "fakeResultLarge": {
-    "model": "GradientBoostingRegressor",
-    "hyperparameters": {
-      "n_estimators": 500,
-      "learning_rate": 0.05,
-      "max_depth": 4,
-      "subsample": 0.8
-    },
-    "metrics": {
-      "training_error": 1.8,
-      "validation_error": 2.4,
-      "rmse": 2.4,
-      "r2": 0.76
-    },
-    "selected_features": [
-      "feature_1",
-      "feature_2",
-      "feature_3",
-      "feature_4",
-      "feature_5",
-      "feature_6",
-      "feature_7",
-      "feature_8",
-      "feature_9",
-      "feature_10",
-      "feature_11",
-      "feature_12"
-    ],
-    "training_split": "70%",
-    "val_split": "30%",
-    "notes": "Regression model with moderate regularization.",
-    "datasetText": "feature_1,feature_2,feature_3,feature_4,feature_5,target\n10.1,0.5,yes,12,1.2,101\n11.3,0.6,no,11,1.0,98\n9.8,0.4,yes,13,1.5,105\n12.5,0.7,no,10,1.1,99\n10.9,0.55,yes,12,1.3,102",
-    "dimensions": {
-      "totalRows": 5,
-      "totalColumns": 6
-    },
-    "optimizer": "Stochastic Gradient Descent"
-  }
+	"fakeResultSmall": {
+		"result": {
+			"plan": {
+				"problem_type": "classification",
+				"target_column": "target",
+				"data_split": {
+					"method": "stratified",
+					"train_val_test": [0.8, 0.2]
+				}
+			},
+			"results": [
+				{
+					"model": "random_forest",
+					"hyperparameters": {
+						"n_estimators": 200,
+						"max_depth": 12,
+						"min_samples_split": 4
+					},
+					"val_accuracy": 0.82,
+					"test_accuracy": 0.8,
+					"artifact": {
+						"n_features": 3,
+						"depth": 12,
+						"classes": [0, 1]
+					}
+				}
+			]
+		},
+		"datasetText": "age,income,churn_risk,target\n29,45000,low,0\n41,72000,medium,1\n35,51000,low,0\n52,98000,high,1\n47,61000,medium,0",
+		"dimensions": {
+			"totalRows": 5,
+			"totalColumns": 4
+		}
+	},
+	"fakeResultLarge": {
+		"result": {
+			"plan": {
+				"problem_type": "regression",
+				"target_column": "target",
+				"data_split": {
+					"method": "random",
+					"train_val_test": [0.7, 0.3]
+				}
+			},
+			"results": [
+				{
+					"model": "gradient_boosting",
+					"hyperparameters": {
+						"n_estimators": 500,
+						"learning_rate": 0.05,
+						"max_depth": 4,
+						"subsample": 0.8
+					},
+					"val_accuracy": 0.76,
+					"test_accuracy": 0.74,
+					"artifact": {
+						"n_features": 12,
+						"feature_importances": [0.1, 0.05, 0.2, 0.0, 0.65]
+					}
+				},
+				{
+					"model": "decision_tree",
+					"hyperparameters": {
+						"max_depth": 6
+					},
+					"val_accuracy": 0.68,
+					"test_accuracy": 0.65,
+					"artifact": {
+						"depth": 6,
+						"n_leaves": 45
+					},
+					"error": null
+				}
+			]
+		},
+		"datasetText": "feature_1,feature_2,feature_3,feature_4,feature_5,target\n10.1,0.5,yes,12,1.2,101\n11.3,0.6,no,11,1.0,98\n9.8,0.4,yes,13,1.5,105\n12.5,0.7,no,10,1.1,99\n10.9,0.55,yes,12,1.3,102",
+		"dimensions": {
+			"totalRows": 5,
+			"totalColumns": 6
+		}
+	}
 }

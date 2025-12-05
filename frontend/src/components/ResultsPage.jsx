@@ -1,23 +1,51 @@
-import React from "react";
+import { useState } from "react";
 import { Link, useLocation, Navigate } from "react-router-dom";
 
 const formatPercent = (val) => {
 	if (val === undefined || val === null) return "N/A";
 	return (val * 100).toFixed(2) + "%";
 };
-const formatKey = (key) => key.replace(/_/g, " ");
+
+const formatKey = (key) => {
+	return key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+};
 
 function ResultsPage() {
 	const { state } = useLocation();
+	const [activeIndex, setActiveIndex] = useState(0);
 
 	if (!state || !state.result) {
 		return <Navigate to="/" />;
 	}
 
 	const { result, datasetText, dimensions } = state;
-	const plan = result.plan || {};
-	const modelResults = result.results || [];
 
+	const initial_results = result.initial_results;
+	const llm_results = result.initial_results;
+	const totalModels = initial_results.length;
+
+	if (totalModels === 0) {
+		return (
+			<div className="min-h-screen flex items-center justify-center">
+				<p>No models were trained. Please check your inputs.</p>
+				<Link to="/" className="ml-4 text-blue-600 underline">
+					Go Back
+				</Link>
+			</div>
+		);
+	}
+
+	const currentModel = initial_results[activeIndex];
+
+	const handlePrev = () => {
+		setActiveIndex((prev) => (prev === 0 ? totalModels - 1 : prev - 1));
+	};
+
+	const handleNext = () => {
+		setActiveIndex((prev) => (prev === totalModels - 1 ? 0 : prev + 1));
+	};
+
+	// Dataset Preview Logic
 	const datasetPreview = (datasetText || "")
 		.trim()
 		.split(/\r?\n/)
@@ -25,174 +53,242 @@ function ResultsPage() {
 		.join("\n");
 
 	return (
-		<div className="min-h-screen bg-main-white text-main-black">
+		<div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
 			<div className="mx-auto max-w-6xl px-4 py-10">
-				<header className="mb-8 flex items-center justify-between">
+				<header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
 					<div>
-						<h1 className="text-3xl font-semibold tracking-tight">
-							Training Results
+						<h1 className="text-3xl font-bold tracking-tight text-slate-900">
+							Model Results
 						</h1>
-						<p className="mt-2 text-slate-600">
-							Problem Type:{" "}
-							<span className="font-medium text-main-black">
-								{plan.problem_type || "Unknown"}
+						<div className="mt-2 flex items-center gap-4 text-sm text-slate-600">
+							<span className="bg-slate-200 px-2 py-1 rounded text-xs font-semibold uppercase tracking-wider">
+								{llm_results.problem_type || "Unknown Type"}
 							</span>
-							{" | "}
-							Target:{" "}
-							<span className="font-medium text-main-black">
-								{plan.target_column || "None"}
+							<span>
+								Target:{" "}
+								<span className="font-semibold text-slate-900">
+									{llm_results.target_column || "N/A"}
+								</span>
 							</span>
-						</p>
+						</div>
 					</div>
 					<Link
-						className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-main-white-hover transition-colors"
+						className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
 						to="/"
 					>
 						← Start Over
 					</Link>
 				</header>
-				<section className="space-y-8">
-					{modelResults.map((modelData, index) => (
-						<div
-							key={index}
-							className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
+
+				<section className="relative mb-10">
+					<div className="flex items-center gap-4">
+						<button
+							onClick={handlePrev}
+							className="hidden md:flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-900 shadow-sm transition-all"
+							disabled={totalModels <= 1}
 						>
-							<div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4 flex justify-between items-center">
+							&larr;
+						</button>
+
+						<div className="flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg transition-all">
+							<div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4 flex flex-wrap justify-between items-center gap-4">
 								<div>
-									<h2 className="text-xl font-bold capitalize text-slate-800">
-										{modelData.model.replace(/_/g, " ")}
-									</h2>
-									{modelData.error && (
-										<span className="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10 mt-1">
+									<div className="flex items-center gap-3">
+										<h2 className="text-2xl font-bold capitalize text-slate-800">
+											{currentModel.model?.replace(/_/g, " ")}
+										</h2>
+										<span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">
+											{activeIndex + 1} of {totalModels}
+										</span>
+									</div>
+									{currentModel.error && (
+										<span className="mt-1 inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10">
 											Training Failed
 										</span>
 									)}
 								</div>
-								<div className="flex gap-6 text-sm">
+
+								{/* Key Metrics Display */}
+								<div className="flex gap-8">
 									<div className="text-center">
-										<p className="text-xs text-slate-500 uppercase tracking-wider">
+										<p className="text-xs font-bold uppercase tracking-wider text-slate-400">
 											Validation Acc
 										</p>
-										<p className="font-mono text-lg font-semibold text-emerald-600">
-											{formatPercent(modelData.val_accuracy)}
+										<p className="font-mono text-2xl font-bold text-emerald-600">
+											{formatPercent(currentModel.val_accuracy)}
 										</p>
 									</div>
 									<div className="text-center">
-										<p className="text-xs text-slate-500 uppercase tracking-wider">
+										<p className="text-xs font-bold uppercase tracking-wider text-slate-400">
 											Test Acc
 										</p>
-										<p className="font-mono text-lg font-semibold text-sky-600">
-											{formatPercent(modelData.test_accuracy)}
+										<p className="font-mono text-2xl font-bold text-blue-600">
+											{formatPercent(currentModel.test_accuracy)}
 										</p>
 									</div>
 								</div>
 							</div>
 
-							<div className="p-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-								<div className="space-y-3">
-									<h3 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">
+							{/* Card Body */}
+							<div className="p-6 grid gap-8 md:grid-cols-2">
+								{/* Column 1: Hyperparameters */}
+								<div className="space-y-4">
+									<h3 className="text-sm font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100 pb-2">
 										Hyperparameters
 									</h3>
-									{modelData.hyperparameters &&
-									Object.keys(modelData.hyperparameters).length > 0 ? (
-										<ul className="space-y-2 text-sm">
-											{Object.entries(modelData.hyperparameters).map(
+									{currentModel.hyperparameters &&
+									Object.keys(currentModel.hyperparameters).length > 0 ? (
+										<ul className="space-y-3 text-sm">
+											{Object.entries(currentModel.hyperparameters).map(
 												([k, v]) => (
-													<li key={k} className="flex justify-between">
-														<span className="text-slate-500 capitalize">
+													<li
+														key={k}
+														className="flex justify-between items-center"
+													>
+														<span className="text-slate-600 font-medium">
 															{formatKey(k)}
 														</span>
-														<span className="font-mono text-slate-700">
-															{String(v)}
+														<span className="font-mono bg-slate-100 px-2 py-1 rounded text-slate-800">
+															{v === null ? "null" : String(v)}
 														</span>
 													</li>
 												)
 											)}
 										</ul>
 									) : (
-										<p className="text-sm text-slate-400 italic">
-											Defaults used
+										<p className="text-sm text-slate-500 italic">
+											No hyperparameters tuned.
 										</p>
 									)}
 								</div>
 
-								<div className="space-y-3">
-									<h3 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">
-										Model Artifacts
+								{/* Column 2: Artifacts/Metadata */}
+								<div className="space-y-4">
+									<h3 className="text-sm font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100 pb-2">
+										Model Internals
 									</h3>
-									{modelData.artifact && !modelData.artifact.error ? (
-										<ul className="space-y-2 text-sm">
-											{Object.entries(modelData.artifact).map(([k, v]) => {
-												// Skip large arrays for UI cleanliness
-												if (Array.isArray(v) && v.length > 5) return null;
+									{currentModel.artifact && !currentModel.artifact.error ? (
+										<ul className="space-y-3 text-sm">
+											{Object.entries(currentModel.artifact).map(([k, v]) => {
+												if (Array.isArray(v) && v.length > 5) return null; // Hide huge arrays
 												return (
-													<li key={k} className="flex justify-between">
-														<span className="text-slate-500 capitalize">
+													<li
+														key={k}
+														className="flex justify-between items-center"
+													>
+														<span className="text-slate-600 font-medium">
 															{formatKey(k)}
 														</span>
-														<span className="font-mono text-slate-700">
-															{Array.isArray(v) ? v.join(", ") : String(v)}
+														<span className="font-mono text-slate-800">
+															{Array.isArray(v)
+																? `[${v.join(", ")}]`
+																: String(v)}
 														</span>
 													</li>
 												);
 											})}
-											{modelData.artifact.classes &&
-												modelData.artifact.classes.length > 5 && (
-													<li className="flex justify-between">
-														<span className="text-slate-500">Classes</span>
-														<span className="font-mono text-slate-700">
-															{modelData.artifact.classes.length} distinct
-															classes
+											{/* Special handling for large arrays like classes */}
+											{currentModel.artifact.classes &&
+												currentModel.artifact.classes.length > 5 && (
+													<li className="flex justify-between items-center">
+														<span className="text-slate-600 font-medium">
+															Classes
+														</span>
+														<span className="font-mono text-slate-800">
+															{currentModel.artifact.classes.length} unique
+															labels
 														</span>
 													</li>
 												)}
 										</ul>
 									) : (
-										<p className="text-sm text-slate-400 italic">
-											No artifacts available
+										<p className="text-sm text-slate-500 italic">
+											No artifacts available.
 										</p>
 									)}
 								</div>
-
-								{modelData.error && (
-									<div className="md:col-span-2 lg:col-span-1 rounded bg-red-50 p-3 text-xs text-red-700 border border-red-100">
-										<strong>Error:</strong> {modelData.error}
-									</div>
-								)}
 							</div>
+
+							{/* Error Box inside Card */}
+							{currentModel.error && (
+								<div className="bg-red-50 border-t border-red-100 p-4 text-sm text-red-800">
+									<span className="font-bold">Error Details: </span>{" "}
+									{currentModel.error}
+								</div>
+							)}
 						</div>
-					))}
+
+						{/* NEXT BUTTON */}
+						<button
+							onClick={handleNext}
+							className="hidden md:flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-900 shadow-sm transition-all"
+							disabled={totalModels <= 1}
+						>
+							&rarr;
+						</button>
+					</div>
+
+					{/* Mobile Navigation (visible only on small screens) */}
+					<div className="mt-4 flex justify-center gap-4 md:hidden">
+						<button
+							onClick={handlePrev}
+							className="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50"
+						>
+							Previous
+						</button>
+						<button
+							onClick={handleNext}
+							className="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50"
+						>
+							Next
+						</button>
+					</div>
 				</section>
 
-				<section className="mt-8 grid gap-6 md:grid-cols-2">
-					<div className="rounded border border-slate-200 bg-main-white-hover p-4">
-						<h2 className="text-lg font-semibold mb-2">Dataset Snapshot</h2>
-						<div className="overflow-auto rounded border border-slate-200 bg-main-white p-2 text-xs text-main-black h-48">
-							<pre className="whitespace-pre-wrap break-words font-mono">
+				{/* --- DATASET INFO SECTION --- */}
+				<section className="grid gap-6 md:grid-cols-2">
+					{/* Dataset Snapshot */}
+					<div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+						<h2 className="text-lg font-bold text-slate-900 mb-3">
+							Dataset Snapshot
+						</h2>
+						<div className="overflow-x-auto rounded border border-slate-100 bg-slate-50 p-3">
+							<pre className="text-xs text-slate-700 font-mono whitespace-pre-wrap break-words h-40 overflow-y-auto">
 								{datasetPreview || "No dataset found."}
 							</pre>
 						</div>
 					</div>
 
-					<div className="rounded border border-slate-200 bg-main-white-hover p-4">
-						<h2 className="text-lg font-semibold mb-4">Metadata</h2>
-						<div className="space-y-2 text-sm">
-							<div className="flex justify-between border-b border-slate-200 pb-2">
-								<span className="text-slate-600">Total Rows</span>
-								<span className="font-medium">
+					{/* Metadata */}
+					<div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+						<h2 className="text-lg font-bold text-slate-900 mb-3">
+							Pipeline Metadata
+						</h2>
+						<div className="space-y-3 text-sm">
+							<div className="flex justify-between border-b border-slate-100 pb-2">
+								<span className="text-slate-500">Total Rows</span>
+								<span className="font-medium text-slate-800">
 									{dimensions?.totalRows ?? "N/A"}
 								</span>
 							</div>
-							<div className="flex justify-between border-b border-slate-200 pb-2">
-								<span className="text-slate-600">Total Columns</span>
-								<span className="font-medium">
+							<div className="flex justify-between border-b border-slate-100 pb-2">
+								<span className="text-slate-500">Total Columns</span>
+								<span className="font-medium text-slate-800">
 									{dimensions?.totalColumns ?? "N/A"}
 								</span>
 							</div>
-							<div className="flex justify-between border-b border-slate-200 pb-2">
-								<span className="text-slate-600">Split Method</span>
-								<span className="font-medium capitalize">
-									{plan.data_split?.method || "N/A"}
+							<div className="flex justify-between border-b border-slate-100 pb-2">
+								<span className="text-slate-500">Split Method</span>
+								<span className="font-medium text-slate-800 capitalize">
+									{llm_results.data_split?.method || "Random"}
+								</span>
+							</div>
+							<div className="flex justify-between border-b border-slate-100 pb-2">
+								<span className="text-slate-500">Ratios (Train/Val/Test)</span>
+								<span className="font-medium text-slate-800">
+									{llm_results.data_split?.train_val_test
+										? `[${llm_results.data_split.train_val_test.join(", ")}]`
+										: "Default"}
 								</span>
 							</div>
 						</div>

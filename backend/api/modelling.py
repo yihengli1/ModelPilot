@@ -6,6 +6,10 @@ import torch
 from rest_framework import status
 from rest_framework.response import Response
 
+from sklearn.naive_bayes import GaussianNB
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score
+
 from .services import generate_plan_gpt, generate_target_gpt, summarize_and_select_features
 
 
@@ -86,173 +90,35 @@ def _accuracy(preds: torch.Tensor, targets: torch.Tensor) -> float:
     return correct / targets.numel()
 
 
-def _train_gaussian_naive_bayes(X: torch.Tensor, y: torch.Tensor) -> Dict[str, torch.Tensor]:
-    classes = torch.unique(y)
-    means = []
-    vars_ = []
-    priors = []
-    for cls in classes:
-        cls_mask = y == cls
-        X_cls = X[cls_mask]
-        means.append(X_cls.mean(dim=0))
-        vars_.append(X_cls.var(dim=0, unbiased=False) + 1e-6)
-        priors.append(cls_mask.float().mean())
-    return {
-        "classes": classes,
-        "means": torch.stack(means),
-        "vars": torch.stack(vars_),
-        "log_priors": torch.log(torch.stack(priors)),
-    }
+def to_numpy(x):
+    if hasattr(x, 'numpy'):
+        return x.numpy()
+    return np.array(x)
 
 
-def _predict_gaussian_naive_bayes(model: Dict[str, torch.Tensor], X: torch.Tensor) -> torch.Tensor:
-    means = model["means"]
-    vars_ = model["vars"]
-    log_priors = model["log_priors"]
-    classes = model["classes"]
-
-    log_likelihood = -0.5 * \
-        torch.sum(torch.log(2 * math.pi * vars_) +
-                  ((X.unsqueeze(1) - means) ** 2) / vars_, dim=2)
-    log_post = log_priors + log_likelihood
-    return classes[torch.argmax(log_post, dim=1)]
-
-
-def _train_decision_stump(X: torch.Tensor, y: torch.Tensor) -> Dict[str, Any]:
-    n_features = X.shape[1]
-    best_gini = float("inf")
-    best_feature = 0
-    best_threshold = 0.0
-    best_left_class = 0
-    best_right_class = 0
-
-    for feat in range(n_features):
-        values = torch.unique(X[:, feat])
-        if values.numel() == 1:
-            continue
-        thresholds = (values[:-1] + values[1:]) / 2
-        for thr in thresholds:
-            left_mask = X[:, feat] <= thr
-            right_mask = ~left_mask
-            if left_mask.sum() == 0 or right_mask.sum() == 0:
-                continue
-
-            def gini(mask: torch.Tensor) -> float:
-                subset = y[mask]
-                if subset.numel() == 0:
-                    return 0.0
-                _, counts = torch.unique(subset, return_counts=True)
-                probs = counts.float() / subset.numel()
-                return 1.0 - torch.sum(probs ** 2).item()
-
-            gini_left = gini(left_mask)
-            gini_right = gini(right_mask)
-            total = y.numel()
-            weighted_gini = (left_mask.sum().item() / total) * \
-                gini_left + (right_mask.sum().item() / total) * gini_right
-
-            if weighted_gini < best_gini:
-                best_gini = weighted_gini
-                best_feature = feat
-                best_threshold = thr.item()
-                left_labels = y[left_mask]
-                right_labels = y[right_mask]
-                best_left_class = torch.mode(left_labels).values.item()
-                best_right_class = torch.mode(right_labels).values.item()
-
-    return {
-        "feature": best_feature,
-        "threshold": best_threshold,
-        "left_class": best_left_class,
-        "right_class": best_right_class,
-    }
-
-
-def _predict_decision_stump(model: Dict[str, Any], X: torch.Tensor) -> torch.Tensor:
-    feat = model["feature"]
-    thr = model["threshold"]
-    left_class = model["left_class"]
-    right_class = model["right_class"]
-    preds = torch.where(X[:, feat] <= thr, left_class, right_class)
-    return preds
-
-
-def train_and_evaluate_models(
-    dataset: np.ndarray,
-    target_column: Any,
-    model_plans: List[Dict[str, Any]],
-    data_split: Dict[str, Any],
-    headers: Optional[List[str]] = None,
-):
-    X_train, y_train, X_val, y_val, X_test, y_test, classes = _split_dataset(
-        dataset, target_column, data_split, headers=headers)
-    results = []
-
-    def serialize_artifact(model: Dict[str, Any], switch: str) -> Dict[str, Any]:
+def serialize_artifact(model, switch) -> Dict[str, Any]:
+    try:
         if switch == "naive_bayes":
             return {
-                "classes": model["classes"].tolist(),
-                "means": model["means"].tolist(),
-                "vars": model["vars"].tolist(),
-                "log_priors": model["log_priors"].tolist(),
+                "classes": model.classes_.tolist(),
+                "means": model.theta_.tolist(),
+                "vars": model.var_.tolist(),
             }
-        return model
-
-    for plan in model_plans:
-        switch = (plan.get("switch") or plan.get("model") or "").lower()
-        try:
-            # Supervised
-            if switch == "naive_bayes":
-                model = _train_gaussian_naive_bayes(X_train, y_train)
-                val_preds = _predict_gaussian_naive_bayes(
-                    model, X_val) if y_val.numel() else torch.tensor([])
-                test_preds = _predict_gaussian_naive_bayes(
-                    model, X_test) if y_test.numel() else torch.tensor([])
-            elif switch == "decision_tree":
-                model = _train_decision_stump(X_train, y_train)
-                val_preds = _predict_decision_stump(
-                    model, X_val) if y_val.numel() else torch.tensor([])
-                test_preds = _predict_decision_stump(
-                    model, X_test) if y_test.numel() else torch.tensor([])
-            else:
-                results.append(
-                    {
-                        "model": plan.get("model"),
-                        "error": f"Model type '{switch}' is unsupported.",
-                    }
-                )
-                continue
-
-            val_acc = _accuracy(val_preds, y_val)
-            test_acc = _accuracy(test_preds, y_test)
-            results.append(
-                {
-                    "model": plan.get("model"),
-                    "switch": switch,
-                    "hyperparameters": plan.get("hyperparameters"),
-                    "reasoning": plan.get("reasoning"),
-                    "val_accuracy": val_acc,
-                    "test_accuracy": test_acc,
-                    "classes": classes.tolist(),
-                    "artifact": serialize_artifact(model, switch),
-                }
-            )
-        except Exception as exc:
-            results.append(
-                {
-                    "model": plan.get("model"),
-                    "switch": switch,
-                    "error": str(exc),
-                }
-            )
-
-    return results
+        elif switch == "decision_tree":
+            return {
+                "feature_importances": model.feature_importances_.tolist(),
+                "n_features": model.n_features_in_,
+                "depth": model.get_depth(),
+                "n_leaves": model.get_n_leaves(),
+            }
+    except Exception:
+        return {"error": "Could not serialize model artifact"}
+    return {}
 
 
 def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] = None):
 
     # Sharp Feature Selection for LLM/Target Column identification
-
     target_name, selected_summaries, aggregated_stats = reduce_features(
         headers, dataset, prompt)
 
@@ -263,17 +129,23 @@ def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] 
         target_name=target_name,
     )
 
-    print("finish")
-
-    # problem_type, target_column, data_split, model_plans = _parsing_initialization(
-    #     llm_result)
+    problem_type, target_column, data_split, model_plans = _parsing_initialization(
+        llm_result)
 
     # Feature Selection
+    # TODO:
+
+    # Data Prep
+
+    X_train, y_train, X_val, y_val, X_test, y_test, classes = prepare_datasets(
+        dataset, target_column, data_split, headers)
 
     # Split Model, PyTorch training
-
-    # model_results = train_and_evaluate_models(
-    #     dataset, target_column, model_plans, data_split, headers=headers)
+    print("Running Initial Model")
+    initial_results = execute_training_cycle(
+        X_train, y_train, X_val, y_val, X_test, y_test, classes,
+        model_plans
+    )
 
     # Based on results 2 call
 
@@ -352,3 +224,70 @@ def _parsing_initialization(llm_result):
         )
 
     return problem_type, target_column, data_split, model_plans
+
+
+def prepare_datasets(
+    dataset,
+    target_column,
+    data_split,
+    headers,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
+    X_train, y_train, X_val, y_val, X_test, y_test, classes = _split_dataset(
+        dataset, target_column, data_split, headers=headers
+    )
+
+    return (
+        to_numpy(X_train), to_numpy(y_train),
+        to_numpy(X_val),   to_numpy(y_val),
+        to_numpy(X_test),  to_numpy(y_test),
+        classes
+    )
+
+
+def execute_training_cycle(
+    X_train, y_train, X_val, y_val, X_test, y_test, classes,
+    model_plans
+) -> List[Dict[str, Any]]:
+    results = []
+
+    for plan in model_plans:
+        model = plan.get("model")
+        params = plan.get("hyperparameters", {})
+        try:
+            clf = None
+            if model == "naive_bayes":
+                clf = GaussianNB(**params)
+            elif model == "decision_tree":
+                clf = DecisionTreeClassifier(**params, random_state=42)
+            else:
+                results.append({"model": model, "error": "Unsupported model"})
+                continue
+
+            clf.fit(X_train, y_train)
+
+            # Evaluation
+            val_acc = accuracy_score(y_val, clf.predict(
+                X_val)) if len(X_val) > 0 else 0.0
+            test_acc = accuracy_score(y_test, clf.predict(
+                X_test)) if len(X_test) > 0 else 0.0
+
+            # Artifact Serialization
+            artifact = {}
+            if model == "decision_tree":
+                artifact = {
+                    "depth": clf.get_depth(),
+                    "n_features": clf.n_features_in_
+                }
+
+            results.append({
+                "model": model,
+                "hyperparameters": params,
+                "val_accuracy": val_acc,
+                "test_accuracy": test_acc,
+                "artifact": artifact
+            })
+
+        except Exception as exc:
+            results.append({"model": model, "error": str(exc)})
+
+    return results

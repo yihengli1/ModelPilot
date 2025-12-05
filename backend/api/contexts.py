@@ -212,7 +212,7 @@ Standard tabular: 70/15/15 or 80/20
 
 Small datasets: k-fold cross-validation
 
-3. Propose initial hyperparameters
+3. Propose initial hyperparameters that are acceptable in scikit_learn implemented models
 
 Give implementable defaults, including:
 

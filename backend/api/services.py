@@ -46,7 +46,7 @@ def generate_plan_gpt(
 
 ):
     api_key = os.getenv("OPENAI_API_KEY")
-    model_key = os.getenv("OPENAI_MODEL", "gpt-5-mini")
+    model_key = os.getenv("OPENAI_MODEL", "gpt-5-nano")
     if not api_key:
         raise EnvironmentError("OPENAI_API_KEY is not set.")
 
@@ -100,7 +100,7 @@ def generate_target_gpt(
         return None
 
     api_key = os.getenv("OPENAI_API_KEY")
-    model_key = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    model_key = os.getenv("OPENAI_MODEL", "gpt-5-nano")
 
     if not api_key:
         raise EnvironmentError("OPENAI_API_KEY is not set.")
@@ -142,6 +142,61 @@ def generate_target_gpt(
     print("-------------------")
 
     return target_column, usage_data.total_tokens
+
+
+def generate_refined_plan_gpt(
+    prompt,
+    initial_results,
+    target_name,
+):
+
+    api_key = os.getenv("OPENAI_API_KEY")
+    model_key = os.getenv("OPENAI_MODEL", "gpt-5-nano")
+
+    if not api_key:
+        raise EnvironmentError("OPENAI_API_KEY is not set.")
+
+    client = OpenAI(api_key=api_key)
+
+    context_results = []
+    for res in initial_results:
+        context_results.append({
+            "model": res.get("model"),
+            "hyperparameters": res.get("hyperparameters"),
+            "val_accuracy": res.get("val_accuracy"),
+            "error": res.get("error")
+        })
+
+    user_message = f"""
+    ### USER PROMPT (CONSTRAINTS)
+    "{prompt}"
+
+    ### TARGET COLUMN
+    {target_name}
+
+    ### PREVIOUS TRAINING RESULTS
+    {json.dumps(context_results, indent=2)}
+
+    Based on the constraints above, generate 3-5 improved model configurations.
+    """
+
+    try:
+        completion = client.chat.completions.create(
+            model=model_key
+            messages=[
+                {"role": "system", "content": system_context},
+                {"role": "user", "content": user_message}
+            ],
+            response_format={"type": "json_object"},
+        )
+
+        content = completion.choices[0].message.content
+        token_usage = completion.usage.total_tokens
+        return json.loads(content), token_usage
+
+    except Exception as exc:
+        print(exc)
+        raise
 
 
 def summarize_and_select_features(

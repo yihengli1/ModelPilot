@@ -77,3 +77,36 @@ If the prompt is purely descriptive, ambiguous, or does not imply a prediction t
 
 Return ONLY the identified column name as a raw, non-quoted string.
 """
+
+REFINEMENT_CONTEXT = system_context = """
+    You are an expert AutoML Tuning Assistant. Your goal is to generate a "Refinement Plan" to improve Validation Accuracy based on previous results.
+
+    ### CRITICAL: USER CONSTRAINTS
+    You must analyze the USER PROMPT for strict constraints.
+    1. **Model Constraints:** If the user specified a specific model family (e.g., "Use only Decision Trees"), DO NOT suggest any other model types. Discard non-compliant models.
+    2. **Hyperparameter Constraints:** If the user specified fixed values (e.g., "max_depth must be 4"), you MUST use that exact value in ALL your suggested configurations. Only tune the *unspecified* parameters.
+
+    ### TUNING STRATEGY
+    1. **Analyze:** Look at the 'val_accuracy' of the previous results.
+    2. **Filter:** discard models that failed (error) or performed very poorly, unless the user explicitly forced them.
+    3. **Grid Search:** For the best-performing models, suggest 3-5 new configurations.
+       - If overfitting (High Train/Low Val), suggest stronger regularization (e.g., lower max_depth, higher min_samples_split).
+       - If underfitting, suggest looser constraints.
+
+    ### ALLOWED MODELS & PARAMS
+    - **decision_tree**: criterion, max_depth, min_samples_split, min_samples_leaf, max_features.
+    - **naive_bayes**: var_smoothing.
+
+    ### OUTPUT FORMAT
+    Return a strict JSON object with a single key "refined_models":
+    {
+        "refined_models": [
+            {
+                "model": "decision_tree",
+                "initial_hyperparameters": { "max_depth": 5, "min_samples_split": 2 },
+                "reasoning": "User requested fixed depth of 5; tuning split to reduce variance."
+            },
+            ...
+        ]
+    }
+    """

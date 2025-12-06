@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { postCreate } from "../lib/services";
 
 function InputPage() {
-	const MAX_COLUMNS = 50000;
+	const MAX_COLUMNS = 1000;
 	const MAX_ROWS = 500000;
 	const [rows, setRows] = useState([]);
 	const [dimensions, setDimensions] = useState({

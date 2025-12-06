@@ -8,8 +8,9 @@ from rest_framework.response import Response
 
 from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, silhouette_score
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.cluster import KMeans
 
 from .services import generate_plan_gpt, generate_target_gpt, summarize_and_select_features, generate_refined_plan_gpt
 
@@ -267,22 +268,33 @@ def execute_training_cycle(
         params = plan.get("hyperparameters", {})
         try:
             clf = None
+            is_supervised = True
             if model == "naive_bayes":
                 clf = GaussianNB(**params)
             elif model == "decision_tree":
                 clf = DecisionTreeClassifier(**params, random_state=42)
             elif model == "knn":
                 clf = KNeighborsClassifier(**params)
+                is_supervised = False
+            elif model == "kmeans":
+                clf = KMeans(**params, random_state=42)
             else:
                 results.append({"model": model, "error": "Unsupported model"})
                 continue
 
-            clf.fit(X_train, y_train)
+            if is_supervised:
+                clf.fit(X_train, y_train)
+                val_acc = accuracy_score(y_val, clf.predict(
+                    X_val))
+                test_acc = accuracy_score(y_test, clf.predict(
+                    X_test))
+            else:
+                clf.fit(X_train)
+                val_labels = clf.predict(X_val)
+                val_acc = silhouette_score(X_val, val_labels)
 
-            val_acc = accuracy_score(y_val, clf.predict(
-                X_val))
-            test_acc = accuracy_score(y_test, clf.predict(
-                X_test))
+                test_labels = clf.predict(X_test)
+                test_acc = silhouette_score(X_test, test_labels)
 
             artifact = serialize_artifact(clf, model)
 
@@ -319,6 +331,11 @@ def serialize_artifact(classifier, model):
                 "n_samples_fit": classifier.n_samples_fit_,
                 "n_features": classifier.n_features_in_,
                 "effective_metric": classifier.effective_metric_,
+            }
+        elif model == "kmeans":
+            return {
+                "n_clusters": classifier.n_clusters,
+                "inertia": float(classifier.inertia_),
             }
         else:
             return {}

@@ -11,14 +11,18 @@ If the user provides NO prompt or NO target column, you must:
    - If no target is apparent, set "target_column" to null (Unsupervised).
 
 ### 2. Model Selection
-Recommend 1-2 appropriate model architectures from this allowed list ONLY:
+Recommend 1-3 appropriate model architectures from this allowed list ONLY:
    - "decision_tree"
    - "naive_bayes"
+   - "knn"
+   - "kmeans" (Unsupervised)
 
 Infer the best choice based on:
    - Data shape & size
    - Feature types (Categorical vs Numerical)
    - Missing value patterns
+   - If target_column is null/None -> Use Unsupervised model.
+   - If target_column is present -> Use decision_tree, naive_bayes, or knn.
 
 ### 3. Hyperparameter Proposal
 Propose valid scikit-learn hyperparameters. You are RESTRICTED to the following keys only:
@@ -38,6 +42,12 @@ For 'knn':
 
 For 'naive_bayes':
    - N/A
+
+For 'kmeans':
+   - "n_clusters": (int, e.g., 3, 5, 10)
+   - "init": ("k-means++", "random")
+   - "n_init": (int or "auto")
+
 
 DO NOT generate parameters outside this list (e.g., do not use 'learning_rate' or 'n_estimators').
 
@@ -104,6 +114,7 @@ REFINEMENT_CONTEXT = """
     - **decision_tree**: criterion, max_depth, min_samples_split, min_samples_leaf, max_features.
     - **knn**: n_neighbors, weights, metric, p.
     - **naive_bayes**: var_smoothing.
+    - **kmeans**: n_clusters, init, n_init.
 
     ### OUTPUT FORMAT
     Return a strict JSON object with a single key "refined_models":

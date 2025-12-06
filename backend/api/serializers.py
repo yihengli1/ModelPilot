@@ -3,7 +3,7 @@ from rest_framework import serializers
 from .models import Run
 from .services import parse_csv_to_matrix
 
-MAX_COLUMNS = 50000
+MAX_COLUMNS = 1000
 MAX_ROWS = 500000
 
 

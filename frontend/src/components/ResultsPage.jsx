@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, Navigate } from "react-router-dom";
+import ResultsCard from "./ResultsCard";
 
 const formatPercent = (val) => {
 	if (val === undefined || val === null) return "N/A";
@@ -253,7 +254,7 @@ function ResultsPage() {
 							Dataset Snapshot
 						</h2>
 						<div className="overflow-x-auto rounded border border-slate-100 bg-slate-50 p-3">
-							<pre className="text-xs text-slate-700 font-mono whitespace-pre-wrap break-words h-40 overflow-y-auto">
+							<pre className="text-xs text-slate-700 font-mono whitespace-pre-wrap break-words overflow-y-auto">
 								{datasetPreview || "No dataset found."}
 							</pre>
 						</div>
@@ -264,38 +265,26 @@ function ResultsPage() {
 							Pipeline Metadata
 						</h2>
 						<div className="space-y-3 text-sm">
-							<div className="flex justify-between border-b border-slate-100 pb-2">
-								<span className="text-slate-500">Total Rows</span>
-								<span className="font-medium text-slate-800">
-									{dimensions?.totalRows ?? "N/A"}
-								</span>
-							</div>
-							<div className="flex justify-between border-b border-slate-100 pb-2">
-								<span className="text-slate-500">Total Columns</span>
-								<span className="font-medium text-slate-800">
-									{dimensions?.totalColumns ?? "N/A"}
-								</span>
-							</div>
-							<div className="flex justify-between border-b border-slate-100 pb-2">
-								<span className="text-slate-500">Split Method</span>
-								<span className="font-medium text-slate-800 capitalize">
-									{plan.data_split?.method || "Random"}
-								</span>
-							</div>
-							<div className="flex justify-between border-b border-slate-100 pb-2">
-								<span className="text-slate-500">Ratios (Train/Val/Test)</span>
-								<span className="font-medium text-slate-800">
-									{plan.data_split?.train_val_test
+							<ResultsCard data={dimensions?.totalRows} name="Total Rows" />
+							<ResultsCard
+								data={dimensions?.totalColumns}
+								name="Total Columns"
+							/>
+							<ResultsCard data={plan.data_split?.method} name="Split Method" />
+							<ResultsCard
+								data={
+									plan.data_split?.train_val_test
 										? `[${plan.data_split.train_val_test.join(", ")}]`
-										: "Default"}
-								</span>
-							</div>
-							<div className="flex justify-between border-b border-slate-100 pb-2">
-								<span className="text-slate-500">Total tokens used</span>
-								<span className="font-medium text-slate-800">
-									{plan.total_tokens}
-								</span>
-							</div>
+										: "Default"
+								}
+								name="Ratios (Train/Val/Test)"
+							/>
+
+							<ResultsCard data={plan.total_tokens} name="Total tokens used" />
+							<ResultsCard
+								data={plan.total_models}
+								name="Total models trained"
+							/>
 						</div>
 					</div>
 				</section>

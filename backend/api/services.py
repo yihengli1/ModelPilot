@@ -6,7 +6,7 @@ import os
 import pandas as pd
 import random
 
-from .contexts import TESTING_CONTEXT, TARGET_COLUMN_SYSTEM_CONTEXT
+from .contexts import TESTING_CONTEXT, TARGET_COLUMN_SYSTEM_CONTEXT, REFINEMENT_CONTEXT
 
 
 def parse_csv_to_matrix(raw_csv: str):
@@ -79,12 +79,6 @@ def generate_plan_gpt(
         raise
 
     usage_data = completion.usage
-
-    print("--- Token Usage Plan ---")
-    print(f"Prompt Tokens: {usage_data.prompt_tokens}")
-    print(f"Total Tokens: {usage_data.total_tokens}")
-    print("-------------------")
-
     content = completion.choices[0].message.content
     parsed = json.loads(content)
 
@@ -133,15 +127,11 @@ def generate_target_gpt(
     target_column = content.strip().strip('"').strip("'")
 
     if target_column.upper() == "NONE" or target_column not in headers:
-        return None
+        return None, completion.usage.total_tokens
 
-    usage_data = completion.usage
-    print("--- Token Usage Plan ---")
-    print(f"Prompt Tokens: {usage_data.prompt_tokens}")
-    print(f"Total Tokens: {usage_data.total_tokens}")
-    print("-------------------")
+    print(target_column)
 
-    return target_column, usage_data.total_tokens
+    return target_column, completion.usage.total_tokens
 
 
 def generate_refined_plan_gpt(
@@ -182,9 +172,9 @@ def generate_refined_plan_gpt(
 
     try:
         completion = client.chat.completions.create(
-            model=model_key
+            model=model_key,
             messages=[
-                {"role": "system", "content": system_context},
+                {"role": "system", "content": REFINEMENT_CONTEXT},
                 {"role": "user", "content": user_message}
             ],
             response_format={"type": "json_object"},

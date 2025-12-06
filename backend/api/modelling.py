@@ -10,7 +10,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score
 
-from .services import generate_plan_gpt, generate_target_gpt, summarize_and_select_features
+from .services import generate_plan_gpt, generate_target_gpt, summarize_and_select_features, generate_refined_plan_gpt
 
 
 def _select_target_index(target_column: Any, headers: Optional[List[str]] = None) -> int:
@@ -92,6 +92,7 @@ def to_numpy(x):
 def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] = None):
 
     # Sharp Feature Selection for LLM/Target Column identification
+    print("Choosing Target Column and Reducing Features")
     target_name, selected_summaries, aggregated_stats, target_tokens = reduce_features(
         headers, dataset, prompt)
 
@@ -122,15 +123,17 @@ def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] 
     )
 
     # Based on results 2 call
+    print("Generating Refinement Plan")
+    refined_models, refined_tokens = generate_refined_plan_gpt(prompt,
+                                                               initial_results,
+                                                               target_name,)
 
     # iterate over range of models/hyperparams/
 
     # best validation error
 
-    # send back result
-
     # calculate token use
-    total_tokens = target_tokens + plan_tokens
+    total_tokens = target_tokens + plan_tokens + refined_tokens
     llm_result["total_tokens"] = total_tokens
 
     return llm_result, initial_results

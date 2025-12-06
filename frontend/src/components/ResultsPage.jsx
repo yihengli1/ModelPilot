@@ -93,7 +93,7 @@ function ResultsPage() {
 							<></>
 						)}
 
-						<div className="flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg transition-all">
+						<div className="flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white transition-all">
 							<div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4 flex flex-wrap justify-between items-center gap-4">
 								<div>
 									<div className="flex items-center gap-3">
@@ -288,6 +288,12 @@ function ResultsPage() {
 									{llm_results.data_split?.train_val_test
 										? `[${llm_results.data_split.train_val_test.join(", ")}]`
 										: "Default"}
+								</span>
+							</div>
+							<div className="flex justify-between border-b border-slate-100 pb-2">
+								<span className="text-slate-500">Total tokens used</span>
+								<span className="font-medium text-slate-800">
+									{llm_results.total_tokens}
 								</span>
 							</div>
 						</div>

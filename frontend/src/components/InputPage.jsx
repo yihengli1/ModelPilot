@@ -100,6 +100,32 @@ function InputPage() {
 		reader.readAsText(file);
 	};
 
+	const handleLoadExample = async () => {
+		const examplePrompt =
+			"Target Column = y. Republican vs Democratic States in U.S. Use a decision tree. ";
+
+		try {
+			const response = await fetch("/smallCities.csv");
+
+			if (!response.ok) {
+				throw new Error(
+					"Could not find 'smallCities.csv' in the public folder."
+				);
+			}
+			const blob = await response.blob();
+			const file = new File([blob], "smallCities.csv", { type: "text/csv" });
+
+			setError("");
+			handleFile(file);
+			setPrompt(examplePrompt);
+		} catch (err) {
+			console.error(err);
+			setError(
+				"Failed to load example. Ensure 'smallCities.csv' is in the public folder."
+			);
+		}
+	};
+
 	const handleGenerate = async () => {
 		if (!fileRef) {
 			setSubmitError("Upload a CSV before generating a model.");
@@ -140,7 +166,7 @@ function InputPage() {
 
 				<section className="flex gap-6 flex-col">
 					<div className="space-y-4">
-						<div className="flex items-center gap-3">
+						<div className="flex flex-col items-center gap-3">
 							<label
 								htmlFor="csv-upload"
 								className="inline-flex cursor-pointer items-center gap-2 rounded border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-main-white-hover mx-auto"
@@ -154,6 +180,12 @@ function InputPage() {
 								/>
 								<span>Upload CSV</span>
 							</label>
+							<button
+								onClick={handleLoadExample}
+								className="mx-auto flex-row bg-main-black text-white rounded text-sm h-10 w-52 hover:bg-main-black-hover"
+							>
+								Simple Example Dataset
+							</button>
 						</div>
 						{fileName && (
 							<p className="text-sm text-slate-600">

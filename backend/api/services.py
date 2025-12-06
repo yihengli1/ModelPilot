@@ -88,7 +88,7 @@ def generate_plan_gpt(
     content = completion.choices[0].message.content
     parsed = json.loads(content)
 
-    return parsed
+    return parsed, usage_data.total_tokens
 
 
 def generate_target_gpt(
@@ -123,8 +123,7 @@ def generate_target_gpt(
         completion = client.chat.completions.create(
             model=model_key,
             messages=messages,
-            temperature=0.0,
-            max_tokens=50
+            max_completion_tokens=50
         )
     except Exception as exc:
         print(exc)
@@ -142,7 +141,7 @@ def generate_target_gpt(
     print(f"Total Tokens: {usage_data.total_tokens}")
     print("-------------------")
 
-    return target_column
+    return target_column, usage_data.total_tokens
 
 
 def summarize_and_select_features(

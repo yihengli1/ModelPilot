@@ -92,12 +92,12 @@ def to_numpy(x):
 def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] = None):
 
     # Sharp Feature Selection for LLM/Target Column identification
-    target_name, selected_summaries, aggregated_stats = reduce_features(
+    target_name, selected_summaries, aggregated_stats, target_tokens = reduce_features(
         headers, dataset, prompt)
 
     # Initialization
     print("Generating Initial Plan")
-    llm_result = generate_plan_gpt(
+    llm_result, plan_tokens = generate_plan_gpt(
         prompt=prompt,
         summaries=selected_summaries,
         target_name=target_name,
@@ -129,6 +129,10 @@ def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] 
 
     # send back result
 
+    # calculate token use
+    total_tokens = target_tokens + plan_tokens
+    llm_result["total_tokens"] = total_tokens
+
     return llm_result, initial_results
 
     # return {
@@ -142,7 +146,8 @@ def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] 
 
 
 def reduce_features(headers, dataset, prompt):
-    target_name = generate_target_gpt(user_prompt=prompt, headers=headers)
+    target_name, target_tokens = generate_target_gpt(
+        user_prompt=prompt, headers=headers)
 
     selected_summaries, aggregated_stats = summarize_and_select_features(
         headers,
@@ -150,7 +155,7 @@ def reduce_features(headers, dataset, prompt):
         target_name=target_name
     )
 
-    return target_name, selected_summaries, aggregated_stats
+    return target_name, selected_summaries, aggregated_stats, target_tokens
 
 # Output Example
 # {

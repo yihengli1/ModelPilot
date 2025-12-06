@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score
+from sklearn.neighbors import KNeighborsClassifier
 
 from .services import generate_plan_gpt, generate_target_gpt, summarize_and_select_features, generate_refined_plan_gpt
 
@@ -270,6 +271,8 @@ def execute_training_cycle(
                 clf = GaussianNB(**params)
             elif model == "decision_tree":
                 clf = DecisionTreeClassifier(**params, random_state=42)
+            elif model == "knn":
+                clf = KNeighborsClassifier(**params)
             else:
                 results.append({"model": model, "error": "Unsupported model"})
                 continue
@@ -310,6 +313,12 @@ def serialize_artifact(classifier, model):
                 "n_features": classifier.n_features_in_,
                 "depth": classifier.get_depth(),
                 "n_leaves": classifier.get_n_leaves(),
+            }
+        elif model == "knn":
+            return {
+                "n_samples_fit": classifier.n_samples_fit_,
+                "n_features": classifier.n_features_in_,
+                "effective_metric": classifier.effective_metric_,
             }
         else:
             return {}

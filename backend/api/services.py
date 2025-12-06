@@ -117,7 +117,7 @@ def generate_target_gpt(
         completion = client.chat.completions.create(
             model=model_key,
             messages=messages,
-            max_completion_tokens=50
+            max_completion_tokens=1000
         )
     except Exception as exc:
         print(exc)
@@ -129,7 +129,7 @@ def generate_target_gpt(
     if target_column.upper() == "NONE" or target_column not in headers:
         return None, completion.usage.total_tokens
 
-    print(target_column)
+    print("Target Column:", target_column)
 
     return target_column, completion.usage.total_tokens
 

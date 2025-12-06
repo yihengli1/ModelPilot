@@ -30,6 +30,12 @@ For 'decision_tree':
    - "min_samples_leaf": (int or float)
    - "max_features": ("sqrt", "log2", null)
 
+For 'knn':
+   - "n_neighbors": (int)
+   - "weights": ("uniform", "distance")
+   - "metric": ("minkowski", "euclidean", "manhattan")
+   - "p": (int, usually 1 or 2)
+
 For 'naive_bayes':
    - N/A
 
@@ -96,6 +102,7 @@ REFINEMENT_CONTEXT = """
 
     ### ALLOWED MODELS & PARAMS
     - **decision_tree**: criterion, max_depth, min_samples_split, min_samples_leaf, max_features.
+    - **knn**: n_neighbors, weights, metric, p.
     - **naive_bayes**: var_smoothing.
 
     ### OUTPUT FORMAT

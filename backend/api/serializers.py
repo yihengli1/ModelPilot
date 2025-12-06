@@ -3,8 +3,8 @@ from rest_framework import serializers
 from .models import Run
 from .services import parse_csv_to_matrix
 
-MAX_COLUMNS = 50_000
-MAX_ROWS = 500_000
+MAX_COLUMNS = 50000
+MAX_ROWS = 500000
 
 
 class RunInputSerializer(serializers.Serializer):

@@ -1,53 +1,67 @@
-## IN PROGRESS
+## ModelPilot
 
-`source .venv/bin/activate`
-`pip install -r requirements.txt`
-`python manage.py migrate`
-`python manage.py runserver`
+ModelPilot is an LLM-guided AutoML system designed to inspect user datasets, generate preprocessing strategies, and assemble training pipelines. It automates the decision-making process for model selection, hyperparameter tuning, and data splitting, providing a transparent and structured workflow for machine learning tasks.
 
-`npm run dev`
+### Quick start
 
-# Data prep and preprocessing (hmmmmmmm not sure if i should implement sounds hard ill look into it future thing)
+Create .env Files
 
-- One hot encoding
-- Discretization
-- Standarization
-- Removing unwanted examples (duplicate, irrelevant, etc.)
+- `touch backend/.env frontend/.env`
+- `echo "OPENAI_API_KEY=your_key_here" > backend/.env & echo "OPENAI_MODEL=gpt-4o" >> backend/.env`
+- `echo "VITE_API_URL=http://127.0.0.1:8000" > frontend/.env`
 
-# Types of Models that will be added
+Backend (Django + DRF):
 
-- Decision Trees
-- Naive Bayes
-- kNN
-- K-Means (Medians ??)
-- DCSCAN
-- Ensemble clustering/methods (random forests, k-means, etc. idk yet)
-- Heiarchical Clustering (is this hard idk)
-- Linear Regression (All Norms + Regularizors)
-- NonLinear Regression (kernel)
-- Linear Classifers (hinge, logistic, SVM)
-- MultiLinear Classifers (multiclass SVMs, softmax, )
-- Boosted Regression Trees (XGBoost)
-- PCA (use different LFM + regularizors)
-- Recommendor Systems (collaborative filtering)
-- MDS (different cost functions, ISOMAP, Sammon's map, etc. altough not too familiar)
-- Neural Networks (Future)
-- CNNs (Future)
-- Transformers (funny)
+- `cd backend`
+- `source .venv/bin/activate`
+- `pip install -r backend/requirements.txt`
+- `python manage.py migrate`
+- `python manage.py runserver`
 
-# Optimization
+Frontend (Vite + React):
 
-- Gradient Descent
-- Stochastic Gradient Descent
-- SVD
+- `cd frontend`
+- `npm install`
+- `npm run dev`
 
-# Feature Selection (Far future)
+### Features
 
-- Simple Regression Weight
-- Search and Score
-- Forward Selection
+- LLM-Guided Planning: Utilizes OpenAI's GPT models to inspect dataset metadata (feature names, types, statistics) and user prompts to formulate a complete ML workflow.
 
-# Cool features
+- Automated Data Profiling: Performs local feature-level summarization and smart feature selection to optimize token usage before API calls.
 
-- Automated math to show obj fun and gradient maybe with graphs as well to plot obj fun to find min w for 2-d datasets (will be using automatic differentiation)
--
+- Iterative Refinement: Implements a feedback loop where initial training results are analyzed by the LLM to suggest hyperparameter tuning strategies (Grid Search).
+
+- Target Detection: Automatically infers target columns from user prompts or defaults to unsupervised learning if no target is specified.
+
+### Supported Models
+
+The system currently supports the following algorithms via scikit-learn:
+
+- Decision Trees: Classification trees with tunable depth and splitting criteria.
+- Naive Bayes: Gaussian Naive Bayes for probabilistic classification.
+- k-Nearest Neighbors (kNN): Distance-based classification with configurable metrics and weights.
+- K-Means Clustering: Unsupervised clustering with silhouette score evaluation.
+
+### Roadmap
+
+# Data Preprocessing
+
+- Encoding: One-hot encoding for categorical variables.
+- Transformation: Standardization and Discretization.
+- Cleaning: Automated removal of duplicate or irrelevant examples.
+
+# Expanded Model Library
+
+- Clustering: DBSCAN, Hierarchical Clustering, and Ensemble Clustering.
+- Regression: Linear Regression (L1/L2 Regularization), Non-linear Kernel Regression.
+- Classifiers: Linear Classifiers (SVM, Logistic Regression, Hinge Loss) and Multi-class SVMs/Softmax.
+- Ensemble Methods: Random Forests and Gradient Boosted Trees (XGBoost).
+- Dimensionality Reduction: PCA, MDS (ISOMAP, Sammon's Map).
+- Deep Learning: Neural Networks, CNNs, and Transformers.
+
+# Optimization & Visualization
+
+- Solvers: Gradient Descent, Stochastic Gradient Descent (SGD), and SVD.
+- Feature Selection: Forward Selection and Score-based search methods.
+- Educational Visualization: Automated plotting of objective functions and gradients for 2D datasets using automatic differentiation.

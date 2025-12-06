@@ -172,8 +172,6 @@ def refineModel(refined_models, X_train, y_train, X_val, y_val, X_test, y_test, 
             "reasoning": model.get("reasoning")
         })
 
-    print(f"   -> Training {len(refined_plans)} tuned variations...")
-
     return execute_training_cycle(
         X_train, y_train, X_val, y_val, X_test, y_test, classes,
         refined_plans

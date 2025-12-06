@@ -20,9 +20,9 @@ function ResultsPage() {
 
 	const { result, datasetText, dimensions } = state;
 
-	const initial_results = result.initial_results;
+	const final_results = result.final_results;
 	const plan = result.plan;
-	const totalModels = initial_results.length;
+	const totalModels = final_results.length;
 
 	if (totalModels === 0) {
 		return (
@@ -35,7 +35,7 @@ function ResultsPage() {
 		);
 	}
 
-	const currentModel = initial_results[activeIndex];
+	const currentModel = final_results[activeIndex];
 
 	const handlePrev = () => {
 		setActiveIndex((prev) => (prev === 0 ? totalModels - 1 : prev - 1));

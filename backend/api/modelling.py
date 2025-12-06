@@ -140,6 +140,7 @@ def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] 
     # calculate token use
     total_tokens = target_tokens + plan_tokens + refined_tokens
     llm_result["total_tokens"] = total_tokens
+    llm_result["total_models"] = len(all_results)
 
     return {
         "plan": llm_result,

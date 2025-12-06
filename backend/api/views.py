@@ -23,14 +23,14 @@ class CreateRunView(APIView):
         dataset_matrix = serializer.validated_data["dataset_matrix"]
         headers = serializer.validated_data.get("headers")
         prompt = serializer.validated_data.get("prompt", "")
-        llm_result, initial_results = training_pipeline(
+        final_results = training_pipeline(
             prompt, dataset_matrix, headers=headers)
 
         response_payload = {
             "prompt": prompt,
             "dataset": request.data.get("dataset", ""),
-            "llm_result": llm_result,
-            "initial_results": initial_results,
+            "plan": final_results["plan"],
+            "final_results": final_results["results"],
         }
 
         return Response(response_payload, status=status.HTTP_200_OK)

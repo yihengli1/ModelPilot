@@ -130,22 +130,50 @@ def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] 
 
     # iterate over range of models/hyperparams/
 
+    refined_results = refineModel(
+        refined_models, X_train, y_train, X_val, y_val, X_test, y_test, classes)
+
     # best validation error
+    all_results = initial_results + refined_results
+    top_3_models = _select_top_models(all_results, top_k=3)
 
     # calculate token use
     total_tokens = target_tokens + plan_tokens + refined_tokens
     llm_result["total_tokens"] = total_tokens
 
-    return llm_result, initial_results
+    return {
+        "plan": llm_result,
+        "results": top_3_models
+    }
 
-    # return {
-    #     "problem_type": problem_type,
-    #     "target_column": target_column,
-    #     "data_split": data_split,
-    #     "models": model_plans,
-    #     # "model_results": model_results,
-    #     "raw_llm_result": llm_result,
-    # }
+
+def _select_top_models(results: List[Dict[str, Any]], top_k: int = 3) -> List[Dict[str, Any]]:
+    valid_results = [r for r in results if not r.get("error")]
+    sorted_results = sorted(
+        valid_results,
+        key=lambda x: x.get("val_accuracy", 0.0),
+        reverse=True
+    )
+    return sorted_results[:top_k]
+
+
+def refineModel(refined_models, X_train, y_train, X_val, y_val, X_test, y_test, classes):
+
+    refined_model_configs = refined_models.get("refined_models", [])
+    refined_plans = []
+    for model in refined_model_configs:
+        refined_plans.append({
+            "model": model.get("model"),
+            "hyperparameters": model.get("initial_hyperparameters"),
+            "reasoning": model.get("reasoning")
+        })
+
+    print(f"   -> Training {len(refined_plans)} tuned variations...")
+
+    return execute_training_cycle(
+        X_train, y_train, X_val, y_val, X_test, y_test, classes,
+        refined_plans
+    )
 
 
 def reduce_features(headers, dataset, prompt):

@@ -21,7 +21,7 @@ function ResultsPage() {
 	const { result, datasetText, dimensions } = state;
 
 	const initial_results = result.initial_results;
-	const llm_results = result.llm_result;
+	const plan = result.plan;
 	const totalModels = initial_results.length;
 
 	if (totalModels === 0) {
@@ -62,12 +62,12 @@ function ResultsPage() {
 						</h1>
 						<div className="mt-2 flex items-center gap-4 text-sm text-slate-600">
 							<span className="bg-slate-200 px-2 py-1 rounded text-xs font-semibold uppercase tracking-wider">
-								{llm_results.problem_type || "Unknown Type"}
+								{plan.problem_type || "Unknown Type"}
 							</span>
 							<span>
 								Target:{" "}
 								<span className="font-semibold text-slate-900">
-									{llm_results.target_column || "N/A"}
+									{plan.target_column || "N/A"}
 								</span>
 							</span>
 						</div>
@@ -279,21 +279,21 @@ function ResultsPage() {
 							<div className="flex justify-between border-b border-slate-100 pb-2">
 								<span className="text-slate-500">Split Method</span>
 								<span className="font-medium text-slate-800 capitalize">
-									{llm_results.data_split?.method || "Random"}
+									{plan.data_split?.method || "Random"}
 								</span>
 							</div>
 							<div className="flex justify-between border-b border-slate-100 pb-2">
 								<span className="text-slate-500">Ratios (Train/Val/Test)</span>
 								<span className="font-medium text-slate-800">
-									{llm_results.data_split?.train_val_test
-										? `[${llm_results.data_split.train_val_test.join(", ")}]`
+									{plan.data_split?.train_val_test
+										? `[${plan.data_split.train_val_test.join(", ")}]`
 										: "Default"}
 								</span>
 							</div>
 							<div className="flex justify-between border-b border-slate-100 pb-2">
 								<span className="text-slate-500">Total tokens used</span>
 								<span className="font-medium text-slate-800">
-									{llm_results.total_tokens}
+									{plan.total_tokens}
 								</span>
 							</div>
 						</div>

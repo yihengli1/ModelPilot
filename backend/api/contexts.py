@@ -78,7 +78,7 @@ If the prompt is purely descriptive, ambiguous, or does not imply a prediction t
 Return ONLY the identified column name as a raw, non-quoted string.
 """
 
-REFINEMENT_CONTEXT = system_context = """
+REFINEMENT_CONTEXT = """
     You are an expert AutoML Tuning Assistant. Your goal is to generate a "Refinement Plan" to improve Validation Accuracy based on previous results.
 
     ### CRITICAL: USER CONSTRAINTS

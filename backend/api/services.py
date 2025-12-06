@@ -6,7 +6,7 @@ import os
 import pandas as pd
 import random
 
-from .contexts import TESTING_CONTEXT, TARGET_COLUMN_SYSTEM_CONTEXT, REFINEMENT_CONTEXT
+from .contexts import INITIAL_CONTEXT, TARGET_COLUMN_SYSTEM_CONTEXT, REFINEMENT_CONTEXT
 
 
 def parse_csv_to_matrix(raw_csv: str):
@@ -64,7 +64,7 @@ def generate_plan_gpt(
 """.strip()
 
     messages = [
-        {"role": "system", "content": TESTING_CONTEXT},
+        {"role": "system", "content": INITIAL_CONTEXT},
         {"role": "user", "content": user_message},
     ]
     try:

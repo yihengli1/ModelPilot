@@ -2,7 +2,6 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .contexts import TESTING_CONTEXT
 from .serializers import RunInputSerializer
 from .modelling import training_pipeline
 

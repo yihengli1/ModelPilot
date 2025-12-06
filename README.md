@@ -43,15 +43,15 @@ The system currently supports the following algorithms via scikit-learn:
 - k-Nearest Neighbors (kNN): Distance-based classification with configurable metrics and weights.
 - K-Means Clustering: Unsupervised clustering with silhouette score evaluation.
 
-### Roadmap
+## Roadmap
 
-# Data Preprocessing
+### Data Preprocessing
 
 - Encoding: One-hot encoding for categorical variables.
 - Transformation: Standardization and Discretization.
 - Cleaning: Automated removal of duplicate or irrelevant examples.
 
-# Expanded Model Library
+### Expanded Model Library
 
 - Clustering: DBSCAN, Hierarchical Clustering, and Ensemble Clustering.
 - Regression: Linear Regression (L1/L2 Regularization), Non-linear Kernel Regression.
@@ -60,7 +60,7 @@ The system currently supports the following algorithms via scikit-learn:
 - Dimensionality Reduction: PCA, MDS (ISOMAP, Sammon's Map).
 - Deep Learning: Neural Networks, CNNs, and Transformers.
 
-# Optimization & Visualization
+### Optimization & Visualization
 
 - Solvers: Gradient Descent, Stochastic Gradient Descent (SGD), and SVD.
 - Feature Selection: Forward Selection and Score-based search methods.

@@ -11,6 +11,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score, silhouette_score
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.cluster import KMeans
+from sklearn.model_selection import ParameterGrid
 
 from .services import generate_plan_gpt, generate_target_gpt, summarize_and_select_features, generate_refined_plan_gpt
 
@@ -266,48 +267,67 @@ def execute_training_cycle(
     for plan in model_plans:
         model = plan.get("model")
         params = plan.get("hyperparameters", {})
-        try:
-            clf = None
-            is_supervised = True
-            if model == "naive_bayes":
-                clf = GaussianNB(**params)
-            elif model == "decision_tree":
-                clf = DecisionTreeClassifier(**params, random_state=42)
-            elif model == "knn":
-                clf = KNeighborsClassifier(**params)
-                is_supervised = False
-            elif model == "kmeans":
-                clf = KMeans(**params, random_state=42)
-            else:
-                results.append({"model": model, "error": "Unsupported model"})
-                continue
 
-            if is_supervised:
-                clf.fit(X_train, y_train)
-                val_acc = accuracy_score(y_val, clf.predict(
-                    X_val))
-                test_acc = accuracy_score(y_test, clf.predict(
-                    X_test))
-            else:
-                clf.fit(X_train)
-                val_labels = clf.predict(X_val)
-                val_acc = silhouette_score(X_val, val_labels)
+        # list of prams
+        grid_params = {k: (v if isinstance(v, list) else [
+                           v]) for k, v in params.items()}
 
-                test_labels = clf.predict(X_test)
-                test_acc = silhouette_score(X_test, test_labels)
+        for single_param_set in ParameterGrid(grid_params):
+            try:
+                clf = None
+                is_supervised = True
+                if model == "naive_bayes":
+                    clf = GaussianNB(**single_param_set)
+                elif model == "decision_tree":
+                    clf = DecisionTreeClassifier(
+                        **single_param_set, random_state=42)
+                elif model == "knn":
+                    clf = KNeighborsClassifier(**single_param_set)
+                elif model == "kmeans":
+                    clf = KMeans(**single_param_set, random_state=42)
+                    is_supervised = False
+                else:
+                    results.append(
+                        {"model": model, "error": "Unsupported model"})
+                    continue
 
-            artifact = serialize_artifact(clf, model)
+                if is_supervised:
+                    clf.fit(X_train, y_train)
+                    val_acc = accuracy_score(y_val, clf.predict(
+                        X_val))
+                    test_acc = accuracy_score(y_test, clf.predict(
+                        X_test))
+                else:
+                    if len(X_val) > 1:
+                        val_labels = clf.predict(X_val)
+                        if len(set(val_labels)) > 1:
+                            val_acc = silhouette_score(X_val, val_labels)
+                        else:
+                            val_acc = -1.0
+                    else:
+                        val_acc = 0.0
 
-            results.append({
-                "model": model,
-                "hyperparameters": params,
-                "val_accuracy": val_acc,
-                "test_accuracy": test_acc,
-                "artifact": artifact
-            })
+                    if len(X_test) > 1:
+                        test_labels = clf.predict(X_test)
+                        if len(set(test_labels)) > 1:
+                            test_acc = silhouette_score(X_test, test_labels)
+                        else:
+                            test_acc = -1.0
+                    else:
+                        test_acc = 0.0
 
-        except Exception as exc:
-            results.append({"model": model, "error": str(exc)})
+                artifact = serialize_artifact(clf, model)
+
+                results.append({
+                    "model": model,
+                    "hyperparameters": single_param_set,
+                    "val_accuracy": val_acc,
+                    "test_accuracy": test_acc,
+                    "artifact": artifact
+                })
+
+            except Exception as exc:
+                results.append({"model": model, "error": str(exc)})
 
     return results
 

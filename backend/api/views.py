@@ -1,9 +1,11 @@
-from rest_framework import status
+from rest_framework import status, generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, FormParser
 
-from .serializers import RunInputSerializer
+from .serializers import RunInputSerializer, DatasetSerializer
 from .pipeline import training_pipeline
+from .models import Dataset
 
 
 class CreateRunView(APIView):
@@ -33,6 +35,27 @@ class CreateRunView(APIView):
         }
 
         return Response(response_payload, status=status.HTTP_200_OK)
+
+
+class UploadDatasetView(generics.CreateAPIView):
+    queryset = Dataset.objects.all()
+    serializer_class = DatasetSerializer
+    # Important for handling files
+    parser_classes = (MultiPartParser, FormParser)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            dataset_instance = serializer.save()
+
+            return Response({
+                "message": "File uploaded successfully",
+                "id": dataset_instance.id,
+                "url": dataset_instance.file.url,
+                # "preview": preview
+            }, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class SampleDataView(APIView):

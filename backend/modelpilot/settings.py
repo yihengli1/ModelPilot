@@ -14,6 +14,9 @@ SECRET_KEY = os.getenv(
     "django-insecure-modelpilot-dev-key-change-me",
 )
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 DEBUG = os.getenv("DJANGO_DEBUG", "true").lower() == "true"
 
 ALLOWED_HOSTS = [

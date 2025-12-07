@@ -16,6 +16,7 @@ Recommend 1-3 appropriate model architectures from this allowed list ONLY:
    - "naive_bayes"
    - "knn"
    - "kmeans" (Unsupervised)
+   - "dbscan" (Unsupervised)
 
 Infer the best choice based on:
    - Data shape & size
@@ -47,6 +48,13 @@ For 'kmeans':
    - "n_clusters": (int, e.g., 3, 5, 10)
    - "init": ("k-means++", "random")
    - "n_init": (int or "auto")
+
+For 'dbscan':
+  - "eps": (float, e.g., 0.5, 0.1 - distance threshold)
+  - "min_samples": (int, e.g., 5, 10)
+  - "metric": ("euclidean", "manhattan", "cosine")
+  - "algorithm": ("auto", "ball_tree", "kd_tree", "brute")
+  - "p": (float, usually null or 1, 2)
 
 
 DO NOT generate parameters outside this list (e.g., do not use 'learning_rate' or 'n_estimators').
@@ -122,6 +130,7 @@ REFINEMENT_CONTEXT = """
     - **knn**: n_neighbors, weights, metric, p.
     - **naive_bayes**: var_smoothing.
     - **kmeans**: n_clusters, init, n_init.
+    - **dbscan**: eps, min_samples, metric, algorithm, p.
 
     ### OUTPUT FORMAT
     Return a strict JSON object with a key "refined_models".

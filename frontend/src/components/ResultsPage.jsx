@@ -37,6 +37,7 @@ function ResultsPage() {
 	}
 
 	const currentModel = final_results[activeIndex];
+	const currentSupervised = currentModel.supervised;
 
 	const handlePrev = () => {
 		setActiveIndex((prev) => (prev === 0 ? totalModels - 1 : prev - 1));
@@ -118,7 +119,9 @@ function ResultsPage() {
 											Validation Acc
 										</p>
 										<p className="font-mono text-2xl font-bold text-emerald-600">
-											{formatPercent(currentModel.val_accuracy)}
+											{currentSupervised
+												? formatPercent(currentModel.val_accuracy)
+												: formatPercent(0)}
 										</p>
 									</div>
 									<div className="text-center">
@@ -126,7 +129,9 @@ function ResultsPage() {
 											Test Acc
 										</p>
 										<p className="font-mono text-2xl font-bold text-blue-600">
-											{formatPercent(currentModel.test_accuracy)}
+											{currentSupervised
+												? formatPercent(currentModel.test_accuracy)
+												: formatPercent(0)}
 										</p>
 									</div>
 								</div>

@@ -10,7 +10,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score, silhouette_score
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, DBSCAN
 from sklearn.model_selection import ParameterGrid
 
 from .services import generate_plan_gpt, generate_target_gpt, summarize_and_select_features, generate_refined_plan_gpt
@@ -284,41 +284,23 @@ def execute_training_cycle(
                 elif model == "kmeans":
                     clf = KMeans(**single_param_set, random_state=42)
                     is_supervised = False
+                elif model == "dbscan":
+                    clf = DBSCAN(**single_param_set)
+                    is_supervised = False
                 else:
                     results.append(
                         {"model": model, "error": "Unsupported model"})
                     continue
 
-                if is_supervised:
-                    clf.fit(X_train, y_train)
-                    val_acc = accuracy_score(y_val, clf.predict(
-                        X_val))
-                    test_acc = accuracy_score(y_test, clf.predict(
-                        X_test))
-                else:
-                    if len(X_val) > 1:
-                        val_labels = clf.predict(X_val)
-                        if len(set(val_labels)) > 1:
-                            val_acc = silhouette_score(X_val, val_labels)
-                        else:
-                            val_acc = -1.0
-                    else:
-                        val_acc = 0.0
+                val_acc, test_acc = training_models(
+                    clf, is_supervised, X_train, X_val, X_test, y_train, y_val, y_test, model)
 
-                    if len(X_test) > 1:
-                        test_labels = clf.predict(X_test)
-                        if len(set(test_labels)) > 1:
-                            test_acc = silhouette_score(X_test, test_labels)
-                        else:
-                            test_acc = -1.0
-                    else:
-                        test_acc = 0.0
-
-                artifact = serialize_artifact(clf, model)
+                artifact = serialize_artifact(clf, model, val_acc)
 
                 results.append({
                     "model": model,
                     "hyperparameters": single_param_set,
+                    "supervised": is_supervised,
                     "val_accuracy": val_acc,
                     "test_accuracy": test_acc,
                     "artifact": artifact
@@ -330,7 +312,31 @@ def execute_training_cycle(
     return results
 
 
-def serialize_artifact(classifier, model):
+def training_models(clf, is_supervised, X_train, X_val, X_test, y_train, y_val, y_test, model):
+    if is_supervised:
+        clf.fit(X_train, y_train)
+    else:
+        clf.fit(X_train)
+
+    if is_supervised:
+        val_acc = accuracy_score(y_val, clf.predict(X_val))
+        test_acc = accuracy_score(y_test, clf.predict(X_test))
+    else:
+        if model == "kmeans" or model == "dbscan":
+            labels = clf.labels_
+
+        if len(set(labels)) > 1:
+            score = silhouette_score(X_train, labels)
+        else:
+            score = -1.0
+
+        # Need for LLM optimization, won't be dispalyed in FE
+        val_acc = score
+        test_acc = score
+    return val_acc, test_acc
+
+
+def serialize_artifact(classifier, model, val_acc):
     try:
         if model == "naive_bayes":
             return {
@@ -354,6 +360,13 @@ def serialize_artifact(classifier, model):
             return {
                 "n_clusters": classifier.n_clusters,
                 "inertia": float(classifier.inertia_),
+                "silhouette_score": val_acc,
+            }
+        elif model == "dbscan":
+            return {
+                "n_samples_fit": classifier.n_samples_fit_,
+                "classes_found": len(set(classifier.classes_)),
+                "silhouette_score": val_acc,
             }
         else:
             return {}

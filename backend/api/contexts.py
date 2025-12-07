@@ -17,6 +17,7 @@ Recommend 1-3 appropriate model architectures from this allowed list ONLY:
    - "knn"
    - "kmeans" (Unsupervised)
    - "dbscan" (Unsupervised)
+   - "hierarchical" (Unsupervised)
 
 Infer the best choice based on:
    - Data shape & size
@@ -55,6 +56,12 @@ For 'dbscan':
   - "metric": ("euclidean", "manhattan", "cosine")
   - "algorithm": ("auto", "ball_tree", "kd_tree", "brute")
   - "p": (float, usually null or 1, 2)
+
+For 'hierarchical' (AgglomerativeClustering):
+  - "n_clusters": (int, e.g., 2, 3, 5)
+  - "metric": ("euclidean", "l1", "l2", "manhattan", "cosine")
+  - "linkage": ("ward", "complete", "average", "single")
+     * Note: "ward" only works with "euclidean".
 
 
 DO NOT generate parameters outside this list (e.g., do not use 'learning_rate' or 'n_estimators').
@@ -131,6 +138,7 @@ REFINEMENT_CONTEXT = """
     - **naive_bayes**: N/A
     - **kmeans**: n_clusters, init, n_init.
     - **dbscan**: eps, min_samples, metric, algorithm, p.
+    - **hierarchical**: n_clusters, metric, linkage.
 
     ### OUTPUT FORMAT
     Return a strict JSON object with a key "refined_models".

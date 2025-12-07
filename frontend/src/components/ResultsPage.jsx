@@ -59,7 +59,7 @@ function ResultsPage() {
 	}
 
 	const currentModel = final_results[activeIndex];
-	const currentSupervised = currentModel.supervised;
+	const currentSupervised = currentModel.metrics.supervised;
 
 	const handlePrev = () => {
 		setActiveIndex((prev) => (prev === 0 ? totalModels - 1 : prev - 1));
@@ -154,7 +154,7 @@ function ResultsPage() {
 										</p>
 										<p className="font-mono text-2xl font-bold text-emerald-600">
 											{currentSupervised
-												? formatPercent(currentModel.val_accuracy)
+												? formatPercent(currentModel.metrics.val_accuracy)
 												: formatPercent(0)}
 										</p>
 									</div>
@@ -164,7 +164,7 @@ function ResultsPage() {
 										</p>
 										<p className="font-mono text-2xl font-bold text-blue-600">
 											{currentSupervised
-												? formatPercent(currentModel.test_accuracy)
+												? formatPercent(currentModel.metrics.test_accuracy)
 												: formatPercent(0)}
 										</p>
 									</div>

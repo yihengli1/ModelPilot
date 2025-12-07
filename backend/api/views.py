@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .serializers import RunInputSerializer
-from .modelling import training_pipeline
+from .pipeline import training_pipeline
 
 
 class CreateRunView(APIView):

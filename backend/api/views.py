@@ -37,10 +37,9 @@ class CreateRunView(APIView):
         return Response(response_payload, status=status.HTTP_200_OK)
 
 
-class UploadDatasetView(generics.CreateAPIView):
+class DatasetListCreateView(generics.ListCreateAPIView):
     queryset = Dataset.objects.all()
     serializer_class = DatasetSerializer
-    # Important for handling files
     parser_classes = (MultiPartParser, FormParser)
 
     def create(self, request, *args, **kwargs):
@@ -52,10 +51,14 @@ class UploadDatasetView(generics.CreateAPIView):
                 "message": "File uploaded successfully",
                 "id": dataset_instance.id,
                 "url": dataset_instance.file.url,
-                # "preview": preview
             }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DatasetDetailView(generics.RetrieveDestroyAPIView):
+    queryset = Dataset.objects.all()
+    serializer_class = DatasetSerializer
 
 
 class SampleDataView(APIView):

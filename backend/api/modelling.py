@@ -5,7 +5,6 @@ from sklearn.tree import DecisionTreeClassifier
 
 
 def model_control(model_type, single_param_set):
-    model_type = None
     is_supervised = True
     if model_type == "naive_bayes":
         model_type = GaussianNB(**single_param_set)
@@ -21,7 +20,7 @@ def model_control(model_type, single_param_set):
         model_type = DBSCAN(**single_param_set)
         is_supervised = False
     elif model_type == "hierarchical":
-        model = AgglomerativeClustering(**single_param_set)
+        model_type = AgglomerativeClustering(**single_param_set)
     else:
         raise
 

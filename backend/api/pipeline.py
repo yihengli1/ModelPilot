@@ -130,6 +130,7 @@ def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] 
                                                                target_name,)
 
     # iterate over range of models/hyperparams/
+    print("Refining model")
     refined_results = refineModel(
         refined_models, X_train, y_train, X_val, y_val, X_test, y_test, classes)
 
@@ -273,7 +274,7 @@ def execute_training_cycle(
                     model_type, single_param_set)
 
                 metrics = training_models(
-                    model, is_supervised, X_train, X_val, X_test, y_train, y_val, y_test, model_type)
+                    model, is_supervised, X_train, X_val, X_test, y_train, y_val, y_test)
 
                 artifact = serialize_artifact(model, model_type, metrics)
 
@@ -285,12 +286,12 @@ def execute_training_cycle(
                 })
 
             except Exception as exc:
-                results.append({"model": model, "error": str(exc)})
+                results.append({"model": model_type, "error": str(exc)})
 
     return results
 
 
-def training_models(model, is_supervised, X_train, X_val, X_test, y_train, y_val, y_test, model_type):
+def training_models(model, is_supervised, X_train, X_val, X_test, y_train, y_val, y_test):
     metrics = {}
     metrics["supervised"] = is_supervised
     if is_supervised:
@@ -323,6 +324,7 @@ def training_models(model, is_supervised, X_train, X_val, X_test, y_train, y_val
             metrics["train_silhouette"] = -1.0
             metrics["val_accuracy"] = -1.0
             metrics["train_accuracy"] = -1.0
+    return metrics
 
 
 def serialize_artifact(classifier, model, metrics):

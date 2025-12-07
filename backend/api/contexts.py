@@ -128,7 +128,7 @@ REFINEMENT_CONTEXT = """
     ### ALLOWED MODELS & PARAMS
     - **decision_tree**: criterion, max_depth, min_samples_split, min_samples_leaf, max_features.
     - **knn**: n_neighbors, weights, metric, p.
-    - **naive_bayes**: var_smoothing.
+    - **naive_bayes**: N/A
     - **kmeans**: n_clusters, init, n_init.
     - **dbscan**: eps, min_samples, metric, algorithm, p.
 

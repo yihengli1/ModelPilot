@@ -11,6 +11,28 @@ const formatKey = (key) => {
 	return key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 };
 
+function formatNumberConditional(number, maxDecimalPlaces) {
+	const numString = String(number);
+
+	const decimalIndex = numString.indexOf(".");
+
+	if (
+		decimalIndex === -1 ||
+		numString.length - 1 - decimalIndex <= maxDecimalPlaces
+	) {
+		return number;
+	} else {
+		return number.toFixed(maxDecimalPlaces);
+	}
+}
+
+const formatRecursive = (value) => {
+	if (Array.isArray(value)) {
+		return `[${value.map(formatRecursive).join(", ")}]`;
+	}
+	return formatNumberConditional(value, 4);
+};
+
 function ResultsPage() {
 	const { state } = useLocation();
 	const [activeIndex, setActiveIndex] = useState(0);
@@ -114,6 +136,18 @@ function ResultsPage() {
 								</div>
 
 								<div className="flex gap-8">
+									{currentSupervised ? (
+										<></>
+									) : (
+										<div className="text-center">
+											<p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+												Unsupervised Model
+											</p>
+											<p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+												No validation/test acc
+											</p>
+										</div>
+									)}
 									<div className="text-center">
 										<p className="text-xs font-bold uppercase tracking-wider text-slate-400">
 											Validation Acc
@@ -185,9 +219,7 @@ function ResultsPage() {
 															{formatKey(k)}
 														</span>
 														<span className="font-mono text-slate-800">
-															{Array.isArray(v)
-																? `[${v.join(", ")}]`
-																: String(v)}
+															{formatRecursive(v)}
 														</span>
 													</li>
 												);

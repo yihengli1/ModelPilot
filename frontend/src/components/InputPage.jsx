@@ -181,7 +181,7 @@ function InputPage() {
 								<span>Upload CSV</span>
 							</label>
 							<button
-								onClick={() => handleLoadExample(2)}
+								onClick={() => handleLoadExample(6)}
 								className="mx-auto flex-row bg-main-black text-white rounded text-sm h-10 w-52 hover:bg-main-black-hover"
 							>
 								Simple Example Dataset

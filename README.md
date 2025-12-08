@@ -7,8 +7,7 @@ ModelPilot is an LLM-guided AutoML system designed to inspect user datasets, gen
 Create .env Files
 
 - `touch backend/.env frontend/.env`
-- `echo "OPENAI_API_KEY=your_key_here" > backend/.env & echo "OPENAI_MODEL=gpt-4o" >> backend/.env`
-- `echo "VITE_API_URL=http://127.0.0.1:8000" > frontend/.env`
+- Follow example.env in frontend and backend folder to setup environment variables
 
 Backend (Django + DRF):
 

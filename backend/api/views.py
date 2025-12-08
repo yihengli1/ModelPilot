@@ -59,8 +59,3 @@ class DatasetListCreateView(generics.ListCreateAPIView):
 class DatasetDetailView(generics.RetrieveDestroyAPIView):
     queryset = Dataset.objects.all()
     serializer_class = DatasetSerializer
-
-
-class SampleDataView(APIView):
-    def get(self, request):
-        return Response({"message": "Sample endpoint", "data": []})

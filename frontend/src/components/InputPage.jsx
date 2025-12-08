@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { postCreate } from "../lib/services";
+import { postCreate, getDataset } from "../lib/services";
 
 function InputPage() {
 	const MAX_COLUMNS = 1000;
@@ -100,19 +100,19 @@ function InputPage() {
 		reader.readAsText(file);
 	};
 
-	const handleLoadExample = async () => {
+	const handleLoadExample = async (id) => {
 		const examplePrompt =
 			"Target Column = y. Republican vs Democratic States in U.S. Use a decision tree. ";
 
 		try {
-			const response = await fetch("/smallCities.csv");
+			const response = await getDataset(id);
 
-			if (!response.ok) {
-				throw new Error(
-					"Could not find 'smallCities.csv' in the public folder."
-				);
+			if (!response.file) {
+				throw new Error("Dataset record found, but no file URL present.");
 			}
-			const blob = await response.blob();
+
+			const fileResponse = await fetch(response.file);
+			const blob = await fileResponse.blob();
 			const file = new File([blob], "smallCities.csv", { type: "text/csv" });
 
 			setError("");
@@ -181,7 +181,7 @@ function InputPage() {
 								<span>Upload CSV</span>
 							</label>
 							<button
-								onClick={handleLoadExample}
+								onClick={() => handleLoadExample(2)}
 								className="mx-auto flex-row bg-main-black text-white rounded text-sm h-10 w-52 hover:bg-main-black-hover"
 							>
 								Simple Example Dataset

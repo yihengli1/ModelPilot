@@ -153,7 +153,7 @@ def _select_top_models(results: List[Dict[str, Any]], top_k: int = 3) -> List[Di
     valid_results = [r for r in results if not r.get("error")]
     sorted_results = sorted(
         valid_results,
-        key=lambda x: x.get("val_accuracy", 0.0),
+        key=lambda x: x["metrics"].get("val_accuracy", 0.0),
         reverse=True
     )
     return sorted_results[:top_k]

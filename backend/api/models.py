@@ -11,6 +11,7 @@ class Dataset(models.Model):
     is_example = models.BooleanField(default=False)
     example_type = models.CharField(max_length=50, blank=True, null=True)
     prompt = models.TextField(blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
 
     def clean(self):
         if self.is_example:
@@ -23,6 +24,9 @@ class Dataset(models.Model):
             if not self.name:
                 raise ValidationError(
                     {'name': 'Examples must have a default name.'})
+            if not self.description:
+                raise ValidationError(
+                    {'description': 'Examples must have a default description.'})
 
     def __str__(self):
         return self.name or f"Dataset {self.id}"

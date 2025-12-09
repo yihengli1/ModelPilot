@@ -11,7 +11,7 @@ class DatasetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Dataset
         fields = ['id', 'name', 'file', 'uploaded_at',
-                  'is_example', 'example_type', 'prompt']
+                  'is_example', 'example_type', 'prompt', 'description']
         read_only_fields = ['id', 'uploaded_at']
 
     def validate_file(self, value):
@@ -30,6 +30,8 @@ class DatasetSerializer(serializers.ModelSerializer):
                 'example_type', self.instance.example_type if self.instance else None)
             name = data.get(
                 'name', self.instance.name if self.instance else None)
+            description = data.get(
+                'name', self.instance.description if self.instance else None)
 
             if not prompt:
                 raise serializers.ValidationError(
@@ -40,6 +42,9 @@ class DatasetSerializer(serializers.ModelSerializer):
             if not name:
                 raise serializers.ValidationError(
                     {"name": "This field is required when is_example is True."})
+            if not description:
+                raise serializers.ValidationError(
+                    {"description": "This field is required when is_example is True."})
 
         return data
 

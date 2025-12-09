@@ -2,45 +2,6 @@ import { useMemo, useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { postCreate, getDataset, getExampleDataset } from "../lib/services";
 
-const EXAMPLE_DATASETS = [
-	{
-		id: 6,
-		name: "US Elections",
-		type: "Classification",
-		description: "Predict Red vs Blue states based on demographics.",
-		filename: "smallCities.csv",
-		prompt:
-			"Target Column = y. Republican vs Democratic States in U.S. Use a decision tree to classify states.",
-	},
-	{
-		id: 2,
-		name: "Housing Prices",
-		type: "Regression",
-		description: "Predict median house values based on location.",
-		filename: "housing.csv",
-		prompt:
-			"Target Column = median_house_value. Predict the value of the house based on features. Use a regression model.",
-	},
-	{
-		id: 3,
-		name: "Mall Customers",
-		type: "Clustering",
-		description: "Group customers by spending score.",
-		filename: "mall_customers.csv",
-		prompt:
-			"Group these customers based on their annual income and spending score. Do not use a target column.",
-	},
-	{
-		id: 4,
-		name: "Mall Customers",
-		type: "Clustering",
-		description: "Group customers by spending score.",
-		filename: "mall_customers.csv",
-		prompt:
-			"Group these customers based on their annual income and spending score. Do not use a target column.",
-	},
-];
-
 function InputPage() {
 	const MAX_COLUMNS = 1000;
 	const MAX_ROWS = 500000;

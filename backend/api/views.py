@@ -65,6 +65,6 @@ class ExampleDatasetListView(generics.ListAPIView):
         return Dataset.objects.filter(is_example=True)
 
 
-class DatasetDetailView(generics.RetrieveDestroyAPIView):
+class DatasetDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Dataset.objects.all()
     serializer_class = DatasetSerializer

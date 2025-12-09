@@ -1,6 +1,45 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { postCreate, getDataset } from "../lib/services";
+
+const EXAMPLE_DATASETS = [
+	{
+		id: 6,
+		name: "US Elections",
+		type: "Classification",
+		description: "Predict Red vs Blue states based on demographics.",
+		filename: "smallCities.csv",
+		prompt:
+			"Target Column = y. Republican vs Democratic States in U.S. Use a decision tree to classify states.",
+	},
+	{
+		id: 2,
+		name: "Housing Prices",
+		type: "Regression",
+		description: "Predict median house values based on location.",
+		filename: "housing.csv",
+		prompt:
+			"Target Column = median_house_value. Predict the value of the house based on features. Use a regression model.",
+	},
+	{
+		id: 3,
+		name: "Mall Customers",
+		type: "Clustering",
+		description: "Group customers by spending score.",
+		filename: "mall_customers.csv",
+		prompt:
+			"Group these customers based on their annual income and spending score. Do not use a target column.",
+	},
+	{
+		id: 4,
+		name: "Mall Customers",
+		type: "Clustering",
+		description: "Group customers by spending score.",
+		filename: "mall_customers.csv",
+		prompt:
+			"Group these customers based on their annual income and spending score. Do not use a target column.",
+	},
+];
 
 function InputPage() {
 	const MAX_COLUMNS = 1000;
@@ -15,6 +54,8 @@ function InputPage() {
 	const [datasetText, setDatasetText] = useState("");
 	const [prompt, setPrompt] = useState("");
 	const [error, setError] = useState("");
+	const [loadingExampleId, setLoadingExampleId] = useState(null);
+	const carouselRef = useRef(null);
 	const [submitting, setSubmitting] = useState(false);
 	const [submitError, setSubmitError] = useState("");
 	const navigate = useNavigate();
@@ -100,12 +141,10 @@ function InputPage() {
 		reader.readAsText(file);
 	};
 
-	const handleLoadExample = async (id) => {
-		const examplePrompt =
-			"Target Column = y. Republican vs Democratic States in U.S. Use a decision tree. ";
-
+	const handleLoadExample = async (example) => {
+		setLoadingExampleId(example.id);
 		try {
-			const response = await getDataset(id);
+			const response = await getDataset(example.id);
 
 			if (!response.file) {
 				throw new Error("Dataset record found, but no file URL present.");
@@ -113,16 +152,30 @@ function InputPage() {
 
 			const fileResponse = await fetch(response.file);
 			const blob = await fileResponse.blob();
-			const file = new File([blob], "smallCities.csv", { type: "text/csv" });
+			const file = new File([blob], example.filename, { type: "text/csv" });
 
 			setError("");
 			handleFile(file);
-			setPrompt(examplePrompt);
+			setPrompt(example.prompt);
 		} catch (err) {
 			console.error(err);
 			setError(
-				"Failed to load example. Ensure 'smallCities.csv' is in the public folder."
+				`Failed to load ${example.name}. Ensure it exists in the database.`
 			);
+		} finally {
+			setLoadingExampleId(null);
+		}
+	};
+
+	const scrollLeft = () => {
+		if (carouselRef.current) {
+			carouselRef.current.scrollBy({ left: -300, behavior: "smooth" });
+		}
+	};
+
+	const scrollRight = () => {
+		if (carouselRef.current) {
+			carouselRef.current.scrollBy({ left: 300, behavior: "smooth" });
 		}
 	};
 
@@ -180,12 +233,12 @@ function InputPage() {
 								/>
 								<span>Upload CSV</span>
 							</label>
-							<button
+							{/* <button
 								onClick={() => handleLoadExample(6)}
 								className="mx-auto flex-row bg-main-black text-white rounded text-sm h-10 w-52 hover:bg-main-black-hover"
 							>
 								Simple Example Dataset
-							</button>
+							</button> */}
 						</div>
 						{fileName && (
 							<p className="text-sm text-slate-600">
@@ -206,6 +259,136 @@ function InputPage() {
 
 						{error && <p className="text-sm text-rose-600">{error}</p>}
 					</div>
+
+					<div>
+						<div className="relative mb-6">
+							<div
+								className="absolute inset-0 flex items-center"
+								aria-hidden="true"
+							>
+								<div className="w-full border-t border-slate-200"></div>
+							</div>
+							<div className="relative flex justify-center">
+								<span className="bg-main-white px-2 text-sm text-slate-500">
+									or try an example
+								</span>
+							</div>
+						</div>
+
+						<div className="relative group/carousel">
+							<button
+								onClick={scrollLeft}
+								className="absolute -left-4 top-1/2 z-10 -translate-y-1/2 rounded-full border border-slate-200 bg-white p-2 shadow-sm opacity-0 transition-opacity hover:bg-slate-50 group-hover/carousel:opacity-100 disabled:opacity-0"
+							>
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									fill="none"
+									viewBox="0 0 24 24"
+									strokeWidth={1.5}
+									stroke="currentColor"
+									className="h-5 w-5 text-slate-600"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										d="M15.75 19.5L8.25 12l7.5-7.5"
+									/>
+								</svg>
+							</button>
+
+							<div
+								ref={carouselRef}
+								className="flex gap-4 overflow-x-auto scroll-smooth pb-4 no-scrollbar snap-x snap-mandatory"
+								style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+							>
+								{EXAMPLE_DATASETS.map((ex) => (
+									<button
+										key={ex.id}
+										onClick={() => handleLoadExample(ex)}
+										disabled={loadingExampleId !== null}
+										className="min-w-[280px] max-w-[300px] flex-none snap-start rounded-lg border border-slate-200 bg-white p-4 text-left shadow-sm transition-all hover:border-slate-400 hover:shadow-md disabled:opacity-50"
+									>
+										<div className="flex w-full items-center justify-between">
+											<span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+												{ex.type}
+											</span>
+											{loadingExampleId === ex.id && (
+												<span className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent"></span>
+											)}
+										</div>
+										<h3 className="mt-2 text-base font-semibold text-slate-900">
+											{ex.name}
+										</h3>
+										<p className="mt-1 text-sm text-slate-500 line-clamp-2">
+											{ex.description}
+										</p>
+									</button>
+								))}
+							</div>
+
+							<button
+								onClick={scrollRight}
+								className="absolute -right-4 top-1/2 z-10 -translate-y-1/2 rounded-full border border-slate-200 bg-white p-2 shadow-sm opacity-0 transition-opacity hover:bg-slate-50 group-hover/carousel:opacity-100 disabled:opacity-0"
+							>
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									fill="none"
+									viewBox="0 0 24 24"
+									strokeWidth={1.5}
+									stroke="currentColor"
+									className="h-5 w-5 text-slate-600"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										d="M8.25 4.5l7.5 7.5-7.5 7.5"
+									/>
+								</svg>
+							</button>
+						</div>
+					</div>
+
+					{/* <div>
+						<div className="relative mb-6">
+							<div
+								className="absolute inset-0 flex items-center"
+								aria-hidden="true"
+							>
+								<div className="w-full border-t border-slate-200"></div>
+							</div>
+							<div className="relative flex justify-center">
+								<span className="bg-main-white px-2 text-sm text-slate-500">
+									or try an example
+								</span>
+							</div>
+						</div>
+
+						<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+							{EXAMPLE_DATASETS.map((ex) => (
+								<button
+									key={ex.id}
+									onClick={() => handleLoadExample(ex)}
+									disabled={loadingExampleId !== null}
+									className="group relative flex flex-col items-start rounded-lg border border-slate-200 bg-white p-4 text-left shadow-sm transition-all hover:border-slate-400 hover:shadow-md disabled:opacity-50"
+								>
+									<div className="flex w-full items-center justify-between">
+										<span className="text-xs font-bold uppercase tracking-wider text-slate-400 group-hover:text-indigo-500">
+											{ex.type}
+										</span>
+										{loadingExampleId === ex.id && (
+											<span className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent"></span>
+										)}
+									</div>
+									<h3 className="mt-2 text-base font-semibold text-slate-900">
+										{ex.name}
+									</h3>
+									<p className="mt-1 text-sm text-slate-500">
+										{ex.description}
+									</p>
+								</button>
+							))}
+						</div>
+					</div> */}
 
 					<div className="space-y-3">
 						<div className="flex items-center justify-between mt-[-1rem]">

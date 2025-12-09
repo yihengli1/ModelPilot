@@ -5,6 +5,7 @@ from .models import Dataset
 
 MAX_COLUMNS = 1000
 MAX_ROWS = 500000
+MAX_WORD_COUNT = 500
 
 
 class DatasetSerializer(serializers.ModelSerializer):
@@ -59,6 +60,13 @@ class RunInputSerializer(serializers.Serializer):
             headers, _, matrix = parse_csv_to_matrix(dataset)
         except ValueError as exc:
             raise serializers.ValidationError({"dataset": str(exc)})
+
+        word_count = len(self.prompt.strip().split())
+
+        if word_count > MAX_WORD_COUNT:
+            raise serializers.ValidationError(
+                f"Prompt exceeds the {MAX_WORD_COUNT} word limit. (Current: {word_count} words)"
+            )
 
         if len(headers) > MAX_COLUMNS or matrix.shape[0] > MAX_ROWS:
             raise serializers.ValidationError(

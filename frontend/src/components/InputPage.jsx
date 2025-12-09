@@ -44,6 +44,8 @@ const EXAMPLE_DATASETS = [
 function InputPage() {
 	const MAX_COLUMNS = 1000;
 	const MAX_ROWS = 500000;
+	const MAX_WORD_COUNT = 500;
+
 	const [rows, setRows] = useState([]);
 	const [dimensions, setDimensions] = useState({
 		totalRows: 0,
@@ -67,6 +69,13 @@ function InputPage() {
 		() => (rows.length > 1 ? rows.slice(1) : []),
 		[rows]
 	);
+
+	const wordCount = useMemo(() => {
+		if (!prompt) return 0;
+		return prompt.trim().split(/\s+/).filter(Boolean).length;
+	}, [prompt]);
+
+	const isOverLimit = wordCount > MAX_WORD_COUNT;
 
 	useEffect(() => {
 		async function fetchExamples() {
@@ -163,7 +172,6 @@ function InputPage() {
 			setError("");
 			handleFile(file);
 			setPrompt(example.prompt);
-			console.log(fileName);
 		} catch (err) {
 			console.error(err);
 			setError(
@@ -191,6 +199,12 @@ function InputPage() {
 			setSubmitError("Upload a CSV before generating a model.");
 			return;
 		}
+
+		if (isOverLimit) {
+			setSubmitError(`Prompt exceeds the ${MAX_WORD_COUNT} word limit.`);
+			return;
+		}
+
 		setSubmitError("");
 		setSubmitting(true);
 		try {
@@ -422,7 +436,16 @@ function InputPage() {
 				</section>
 
 				<div className="mt-8 space-y-3">
-					<h2 className="text-lg font-semibold">LLM Context</h2>
+					<div className="flex items-center justify-between">
+						<h2 className="text-lg font-semibold">LLM Context</h2>
+						<span
+							className={`text-xs font-medium ${
+								isOverLimit ? "text-rose-600" : "text-slate-400"
+							}`}
+						>
+							{wordCount} / {MAX_WORD_COUNT} words
+						</span>
+					</div>
 					<p className="text-sm text-slate-600">
 						Add any domain details, target definitions, or goals the model
 						should consider.
@@ -432,8 +455,19 @@ function InputPage() {
 						onChange={(e) => setPrompt(e.target.value)}
 						placeholder="Describe the dataset context, target column meaning, or what you want the model to optimize for..."
 						rows={5}
-						className="w-full rounded border border-slate-300 p-3 text-sm text-main-black focus:border-slate-500 focus:outline-none"
+						className={`w-full rounded border p-3 text-sm text-main-black focus:outline-none focus:ring-1 shadow-sm transition-all
+                            ${
+															isOverLimit
+																? "border-rose-300 focus:border-rose-500 focus:ring-rose-200 bg-rose-50"
+																: "border-slate-3"
+														}
+                        `}
 					/>
+					{isOverLimit && (
+						<p className="text-xs text-rose-600 font-medium">
+							Please shorten your prompt to under {MAX_WORD_COUNT} words.
+						</p>
+					)}
 				</div>
 
 				<div className="mt-8 space-y-3 flex">

@@ -226,6 +226,32 @@ function ResultsPage() {
 									{currentModel.artifact && !currentModel.artifact.error ? (
 										<ul className="space-y-3 text-sm">
 											{Object.entries(currentModel.artifact).map(([k, v]) => {
+												const isLarge =
+													Array.isArray(v) && (v.length > 5 || v[0].length > 5);
+
+												return (
+													<li
+														key={k}
+														className={`flex justify-between gap-4 ${
+															isLarge ? "items-start" : "items-center"
+														}`}
+													>
+														<span className="text-slate-600 font-medium shrink-0">
+															{formatKey(k)}
+														</span>
+														<span
+															className={`font-mono text-slate-800 ${
+																isLarge
+																	? "max-h-[5rem] overflow-y-auto w-2/3 text-right break-words bg-slate-50 p-2 rounded border border-slate-100 text-xs"
+																	: ""
+															}`}
+														>
+															{formatRecursive(v)}
+														</span>
+													</li>
+												);
+											})}
+											{/* {Object.entries(currentModel.artifact).map(([k, v]) => {
 												if (Array.isArray(v) && v.length > 5) return null; // Hide huge arrays
 												return (
 													<li
@@ -252,7 +278,7 @@ function ResultsPage() {
 															labels
 														</span>
 													</li>
-												)}
+												)} */}
 										</ul>
 									) : (
 										<p className="text-sm text-slate-500 italic">

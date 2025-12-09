@@ -1,6 +1,7 @@
 import { useMemo, useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { postCreate, getDataset, getExampleDataset } from "../lib/services";
+import LoadingSpinner from "./LoadingSpinner";
 
 function InputPage() {
 	const MAX_COLUMNS = 1000;
@@ -188,21 +189,7 @@ function InputPage() {
 
 	return (
 		<div className="min-h-screen bg-main-white text-main-black">
-			{submitting && (
-				<div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm transition-all">
-					<div className="relative flex items-center justify-center">
-						<div className="absolute h-24 w-24 rounded-full border-4 border-slate-100 animate-ping opacity-75"></div>
-						<div className="h-16 w-16 animate-spin rounded-full border-4 border-slate-200 border-t-slate-800"></div>
-					</div>
-					<h2 className="mt-8 text-2xl font-semibold text-slate-800 tracking-tight animate-pulse">
-						Training Model
-					</h2>
-					<p className="mt-2 text-slate-500">
-						Analyzing your data and generating a pipeline...
-					</p>
-					<p className="mt-2 text-slate-400">May take up to 1 minute...</p>
-				</div>
-			)}
+			{submitting && <LoadingSpinner />}
 			<div className="mx-auto max-w-5xl px-4 py-10">
 				<header className="mb-8">
 					<h1 className="text-3xl text-center font-semibold tracking-tight">

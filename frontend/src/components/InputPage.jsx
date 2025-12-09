@@ -1,6 +1,6 @@
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { postCreate, getDataset } from "../lib/services";
+import { postCreate, getDataset, getExampleDataset } from "../lib/services";
 
 const EXAMPLE_DATASETS = [
 	{
@@ -55,6 +55,7 @@ function InputPage() {
 	const [prompt, setPrompt] = useState("");
 	const [error, setError] = useState("");
 	const [loadingExampleId, setLoadingExampleId] = useState(null);
+	const [selectedExampleId, setSelectedExampleId] = useState(null);
 	const carouselRef = useRef(null);
 	const [submitting, setSubmitting] = useState(false);
 	const [submitError, setSubmitError] = useState("");
@@ -69,8 +70,7 @@ function InputPage() {
 
 	useEffect(() => {
 		async function fetchExamples() {
-			const res = await fetch("/api/datasets/examples/");
-			const data = await res.json();
+			const data = await getExampleDataset();
 			setExamples(data);
 		}
 		fetchExamples();
@@ -85,6 +85,7 @@ function InputPage() {
 			totalRows: 0,
 			totalColumns: 0,
 		}));
+		setSelectedExampleId(null);
 	};
 
 	const parseCsvPreview = (text) => {
@@ -153,20 +154,16 @@ function InputPage() {
 
 	const handleLoadExample = async (example) => {
 		setLoadingExampleId(example.id);
+		setSelectedExampleId(example.id);
 		try {
-			const response = await getDataset(example.id);
-
-			if (!response.file) {
-				throw new Error("Dataset record found, but no file URL present.");
-			}
-
-			const fileResponse = await fetch(response.file);
-			const blob = await fileResponse.blob();
-			const file = new File([blob], example.filename, { type: "text/csv" });
+			const response = await fetch(example.file);
+			const blob = await response.blob();
+			const file = new File([blob], example.name, { type: "text/csv" });
 
 			setError("");
 			handleFile(file);
 			setPrompt(example.prompt);
+			console.log(fileName);
 		} catch (err) {
 			console.error(err);
 			setError(
@@ -239,7 +236,10 @@ function InputPage() {
 									type="file"
 									accept=".csv,text/csv"
 									className="hidden"
-									onChange={(e) => handleFile(e.target.files?.[0])}
+									onChange={(e) => {
+										handleFile(e.target.files?.[0]);
+										setSelectedExampleId(null);
+									}}
 								/>
 								<span>Upload CSV</span>
 							</label>
@@ -310,11 +310,13 @@ function InputPage() {
 										key={ex.id}
 										onClick={() => handleLoadExample(ex)}
 										disabled={loadingExampleId !== null}
-										className="min-w-[280px] max-w-[300px] flex-none snap-start rounded-lg border border-slate-200 bg-white p-4 text-left shadow-sm transition-all hover:border-slate-400 hover:shadow-md disabled:opacity-50"
+										className={`min-w-[280px] max-w-[300px] flex-none snap-start rounded-lg border border-slate-200 bg-white p-4 text-left shadow-sm transition-all hover:border-slate-400 hover:shadow-md disabled:opacity-50 ${
+											selectedExampleId == ex.id ? "border-slate-400" : ""
+										}`}
 									>
 										<div className="flex w-full items-center justify-between">
 											<span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-												{ex.type}
+												{ex.example_type}
 											</span>
 											{loadingExampleId === ex.id && (
 												<span className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent"></span>

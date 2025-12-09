@@ -52,10 +52,10 @@ export const getDataset = async (id) => {
 	return await resp.json();
 };
 
-export const uploadDataset = async (formData, optionalName = "") => {
-	const resp = await fetch(`${API_BASE_URL}/datasets/`, {
-		method: "POST",
-		body: formData,
+export const getExampleDataset = async () => {
+	const resp = await fetch(`${API_BASE_URL}/datasets/examples/`, {
+		method: "GET",
+		headers: { "Content-Type": "application/json" },
 	});
 
 	if (!resp.ok) {

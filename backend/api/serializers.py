@@ -14,6 +14,9 @@ class DatasetSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'file', 'uploaded_at',
                   'is_example', 'example_type', 'prompt', 'description']
         read_only_fields = ['id', 'uploaded_at']
+        extra_kwargs = {
+            'file': {'required': False}
+        }
 
     def validate_file(self, value):
         if not value.name.endswith('.csv'):
@@ -21,6 +24,10 @@ class DatasetSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, data):
+        if self.instance is None and not data.get('file'):
+            raise serializers.ValidationError(
+                {"file": "File is required for creation."})
+
         is_example = data.get(
             'is_example', self.instance.is_example if self.instance else False)
 

@@ -68,3 +68,4 @@ class ExampleDatasetListView(generics.ListAPIView):
 class DatasetDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Dataset.objects.all()
     serializer_class = DatasetSerializer
+    parser_classes = (MultiPartParser, FormParser)

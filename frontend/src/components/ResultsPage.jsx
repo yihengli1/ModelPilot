@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link, useLocation, Navigate } from "react-router-dom";
 import ResultsCard from "./ResultsCard";
 
@@ -47,6 +47,30 @@ function ResultsPage() {
 	const plan = result.plan;
 	const totalModels = final_results.length;
 
+	const previewData = useMemo(() => {
+		if (!datasetText) return { headers: [], rows: [] };
+
+		const MAX_COLS = 20;
+		const MAX_ROWS = 5;
+
+		const lines = datasetText.trim().split(/\r?\n/);
+		const nonEmptyLines = lines.filter((line) => line.trim().length > 0);
+
+		if (nonEmptyLines.length === 0) return { headers: [], rows: [] };
+
+		const headers = nonEmptyLines[0]
+			.split(",")
+			.map((c) => c.trim())
+			.slice(0, MAX_COLS);
+		const rows = nonEmptyLines.slice(1, MAX_ROWS + 1).map((line) =>
+			line
+				.split(",")
+				.map((c) => c.trim())
+				.slice(0, MAX_COLS)
+		);
+		return { headers, rows };
+	}, [datasetText]);
+
 	if (totalModels === 0) {
 		return (
 			<div className="min-h-screen flex items-center justify-center">
@@ -68,13 +92,6 @@ function ResultsPage() {
 	const handleNext = () => {
 		setActiveIndex((prev) => (prev === totalModels - 1 ? 0 : prev + 1));
 	};
-
-	// Dataset Preview Logic
-	const datasetPreview = (datasetText || "")
-		.trim()
-		.split(/\r?\n/)
-		.slice(0, 15)
-		.join("\n");
 
 	return (
 		<div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
@@ -290,10 +307,44 @@ function ResultsPage() {
 						<h2 className="text-lg font-bold text-slate-900 mb-3">
 							Dataset Snapshot
 						</h2>
-						<div className="overflow-x-auto rounded border border-slate-100 bg-slate-50 p-3">
-							<pre className="text-xs text-slate-700 font-mono whitespace-pre-wrap break-words overflow-y-auto">
-								{datasetPreview || "No dataset found."}
-							</pre>
+						<div className="overflow-x-auto rounded border border-slate-100 bg-slate-50">
+							{previewData.rows.length > 0 ? (
+								<table className="min-w-full border-collapse text-sm">
+									<thead className="bg-slate-100">
+										<tr>
+											{previewData.headers.map((h, i) => (
+												<th
+													key={i}
+													className="border border-slate-200 px-3 py-2 text-left font-semibold text-slate-700 whitespace-nowrap"
+												>
+													{h}
+												</th>
+											))}
+										</tr>
+									</thead>
+									<tbody>
+										{previewData.rows.map((row, rIdx) => (
+											<tr
+												key={rIdx}
+												className="odd:bg-white even:bg-slate-50/50"
+											>
+												{row.map((cell, cIdx) => (
+													<td
+														key={cIdx}
+														className="border border-slate-200 px-3 py-2 text-slate-700 whitespace-nowrap"
+													>
+														{cell}
+													</td>
+												))}
+											</tr>
+										))}
+									</tbody>
+								</table>
+							) : (
+								<p className="p-4 text-slate-500 italic">
+									No dataset preview available.
+								</p>
+							)}
 						</div>
 					</div>
 

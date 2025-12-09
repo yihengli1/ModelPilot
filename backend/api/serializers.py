@@ -68,7 +68,7 @@ class RunInputSerializer(serializers.Serializer):
         except ValueError as exc:
             raise serializers.ValidationError({"dataset": str(exc)})
 
-        word_count = len(self.prompt.strip().split())
+        word_count = len(attrs.get("prompt").strip().split())
 
         if word_count > MAX_WORD_COUNT:
             raise serializers.ValidationError(

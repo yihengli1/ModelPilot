@@ -331,9 +331,10 @@ def serialize_artifact(classifier, model, metrics):
     try:
         if model == "naive_bayes":
             return {
-                "classes": classifier.classes_.tolist(),
-                "means": classifier.theta_.tolist(),
-                "vars": classifier.var_.tolist(),
+                # Returning not all values, will find a fix later
+                "classes": classifier.classes_.tolist()[:, 20],
+                "means": classifier.theta_.tolist()[:20, :20],
+                "vars": classifier.var_.tolist()[:20, :20],
             }
         elif model == "decision_tree":
             return {

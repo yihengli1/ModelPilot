@@ -2,6 +2,7 @@ from rest_framework import status, generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.permissions import AllowAny
 
 from .serializers import RunInputSerializer, DatasetSerializer
 from .pipeline import training_pipeline
@@ -54,6 +55,14 @@ class DatasetListCreateView(generics.ListCreateAPIView):
             }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ExampleDatasetListView(generics.ListAPIView):
+    serializer_class = DatasetSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        return Dataset.objects.filter(is_example=True)
 
 
 class DatasetDetailView(generics.RetrieveDestroyAPIView):

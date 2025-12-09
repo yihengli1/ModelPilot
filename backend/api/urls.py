@@ -2,7 +2,7 @@ from django.urls import include, path
 
 from rest_framework.routers import DefaultRouter
 
-from .views import CreateRunView, DatasetListCreateView, DatasetDetailView
+from .views import CreateRunView, DatasetListCreateView, DatasetDetailView, ExampleDatasetListView
 
 router = DefaultRouter()
 
@@ -12,6 +12,8 @@ urlpatterns = [
     path("run-prompt/", CreateRunView.as_view(), name="run-prompt"),
     path("datasets/", DatasetListCreateView.as_view(), name="dataset-list-create"),
     path("datasets/<int:pk>/",
-         DatasetDetailView.as_view(), name="upload-dataset"),
+         DatasetDetailView.as_view(), name="get-dataset"),
+    path("datasets/examples/", ExampleDatasetListView.as_view(),
+         name="get-example-datasets"),
     path("", include(router.urls)),
 ]

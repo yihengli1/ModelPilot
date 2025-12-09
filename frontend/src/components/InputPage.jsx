@@ -59,12 +59,22 @@ function InputPage() {
 	const [submitting, setSubmitting] = useState(false);
 	const [submitError, setSubmitError] = useState("");
 	const navigate = useNavigate();
+	const [examples, setExamples] = useState([]);
 
 	const headers = rows.length ? rows[0] : [];
 	const bodyRows = useMemo(
 		() => (rows.length > 1 ? rows.slice(1) : []),
 		[rows]
 	);
+
+	useEffect(() => {
+		async function fetchExamples() {
+			const res = await fetch("/api/datasets/examples/");
+			const data = await res.json();
+			setExamples(data);
+		}
+		fetchExamples();
+	}, []);
 
 	const resetFileState = () => {
 		setRows([]);
@@ -233,12 +243,6 @@ function InputPage() {
 								/>
 								<span>Upload CSV</span>
 							</label>
-							{/* <button
-								onClick={() => handleLoadExample(6)}
-								className="mx-auto flex-row bg-main-black text-white rounded text-sm h-10 w-52 hover:bg-main-black-hover"
-							>
-								Simple Example Dataset
-							</button> */}
 						</div>
 						{fileName && (
 							<p className="text-sm text-slate-600">
@@ -301,7 +305,7 @@ function InputPage() {
 								className="flex gap-4 overflow-x-auto scroll-smooth pb-4 no-scrollbar snap-x snap-mandatory"
 								style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
 							>
-								{EXAMPLE_DATASETS.map((ex) => (
+								{examples.map((ex) => (
 									<button
 										key={ex.id}
 										onClick={() => handleLoadExample(ex)}
@@ -347,48 +351,6 @@ function InputPage() {
 							</button>
 						</div>
 					</div>
-
-					{/* <div>
-						<div className="relative mb-6">
-							<div
-								className="absolute inset-0 flex items-center"
-								aria-hidden="true"
-							>
-								<div className="w-full border-t border-slate-200"></div>
-							</div>
-							<div className="relative flex justify-center">
-								<span className="bg-main-white px-2 text-sm text-slate-500">
-									or try an example
-								</span>
-							</div>
-						</div>
-
-						<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-							{EXAMPLE_DATASETS.map((ex) => (
-								<button
-									key={ex.id}
-									onClick={() => handleLoadExample(ex)}
-									disabled={loadingExampleId !== null}
-									className="group relative flex flex-col items-start rounded-lg border border-slate-200 bg-white p-4 text-left shadow-sm transition-all hover:border-slate-400 hover:shadow-md disabled:opacity-50"
-								>
-									<div className="flex w-full items-center justify-between">
-										<span className="text-xs font-bold uppercase tracking-wider text-slate-400 group-hover:text-indigo-500">
-											{ex.type}
-										</span>
-										{loadingExampleId === ex.id && (
-											<span className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent"></span>
-										)}
-									</div>
-									<h3 className="mt-2 text-base font-semibold text-slate-900">
-										{ex.name}
-									</h3>
-									<p className="mt-1 text-sm text-slate-500">
-										{ex.description}
-									</p>
-								</button>
-							))}
-						</div>
-					</div> */}
 
 					<div className="space-y-3">
 						<div className="flex items-center justify-between mt-[-1rem]">

@@ -10,13 +10,38 @@ MAX_ROWS = 500000
 class DatasetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Dataset
-        fields = ['id', 'name', 'file', 'uploaded_at']
+        fields = ['id', 'name', 'file', 'uploaded_at',
+                  'is_example', 'example_type', 'prompt']
         read_only_fields = ['id', 'uploaded_at']
 
     def validate_file(self, value):
         if not value.name.endswith('.csv'):
             raise serializers.ValidationError("Only CSV files are allowed.")
         return value
+
+    def validate(self, data):
+        is_example = data.get(
+            'is_example', self.instance.is_example if self.instance else False)
+
+        if is_example:
+            prompt = data.get(
+                'prompt', self.instance.prompt if self.instance else None)
+            example_type = data.get(
+                'example_type', self.instance.example_type if self.instance else None)
+            name = data.get(
+                'name', self.instance.name if self.instance else None)
+
+            if not prompt:
+                raise serializers.ValidationError(
+                    {"prompt": "This field is required when is_example is True."})
+            if not example_type:
+                raise serializers.ValidationError(
+                    {"example_type": "This field is required when is_example is True."})
+            if not name:
+                raise serializers.ValidationError(
+                    {"name": "This field is required when is_example is True."})
+
+        return data
 
 
 class RunInputSerializer(serializers.Serializer):

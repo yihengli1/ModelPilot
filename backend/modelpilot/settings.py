@@ -27,11 +27,13 @@ if USE_S3:
     AWS_S3_VERIFY = True
 
     STORAGES = {
+        # Uploads go to root (datsats -> /datasets/)
         "default": {
-            "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+            "BACKEND": "modelpilot.custom_storages.MediaStorage",
         },
+        # static go to /static/
         "staticfiles": {
-            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+            "BACKEND": "modelpilot.custom_storages.StaticStorage",
         },
     }
 else:

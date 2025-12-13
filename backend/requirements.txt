@@ -56,3 +56,5 @@ typing_extensions==4.15.0
 tzdata==2025.3
 urllib3==2.6.2
 whitenoise==6.11.0
+mysqlclient==2.2.7
+pymysql==1.1.2

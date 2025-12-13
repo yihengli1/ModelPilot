@@ -10,11 +10,5 @@
 			"src": "/(.*)",
 			"dest": "modelpilot/wsgi.py"
 		}
-	],
-	"rewrites": [
-		{
-			"source": "/(.*)",
-			"destination": "/modelpilot/wsgi.py"
-		}
 	]
 }

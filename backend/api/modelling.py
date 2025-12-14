@@ -1,10 +1,10 @@
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering
-from sklearn.naive_bayes import GaussianNB
-from sklearn.tree import DecisionTreeClassifier
-
 
 def model_control(model_type, single_param_set):
+    from sklearn.neighbors import KNeighborsClassifier
+    from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering
+    from sklearn.naive_bayes import GaussianNB
+    from sklearn.tree import DecisionTreeClassifier
+
     is_supervised = True
     if model_type == "naive_bayes":
         model_type = GaussianNB(**single_param_set)

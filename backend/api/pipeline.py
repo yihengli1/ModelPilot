@@ -2,13 +2,10 @@ import math
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
-import torch
 from rest_framework import status
 from rest_framework.response import Response
 
-from sklearn.metrics import accuracy_score, silhouette_score
-from sklearn.model_selection import ParameterGrid
-
+import torch
 
 from .services import generate_plan_gpt, generate_target_gpt, summarize_and_select_features, generate_refined_plan_gpt
 from .modelling import model_control
@@ -258,6 +255,7 @@ def execute_training_cycle(
     X_train, y_train, X_val, y_val, X_test, y_test, classes,
     model_plans
 ) -> List[Dict[str, Any]]:
+    from sklearn.model_selection import ParameterGrid
     results = []
 
     for plan in model_plans:
@@ -294,6 +292,8 @@ def execute_training_cycle(
 def training_models(model, is_supervised, X_train, X_val, X_test, y_train, y_val, y_test):
     metrics = {}
     metrics["supervised"] = is_supervised
+    from sklearn.metrics import accuracy_score, silhouette_score
+
     if is_supervised:
         model.fit(X_train, y_train)
         val_acc = accuracy_score(y_val, model.predict(X_val))

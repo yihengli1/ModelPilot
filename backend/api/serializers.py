@@ -1,3 +1,6 @@
+import sys
+import csv
+import io
 from rest_framework import serializers
 
 from .services import parse_csv_to_matrix
@@ -6,6 +9,7 @@ from .models import Dataset
 MAX_COLUMNS = 1000
 MAX_ROWS = 500000
 MAX_WORD_COUNT = 500
+MAX_FILE_SIZE_MB = 10
 
 
 class DatasetSerializer(serializers.ModelSerializer):
@@ -63,6 +67,37 @@ class RunInputSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         dataset = attrs.get("dataset", "")
+
+        if len(dataset.encode('utf-8')) > (MAX_FILE_SIZE_MB * 1024 * 1024):
+            raise serializers.ValidationError(
+                {"dataset": f"File too large. Max size is {MAX_FILE_SIZE_MB}MB."}
+            )
+
+        try:
+            f = io.StringIO(dataset)
+            reader = csv.reader(f)
+            try:
+                header = next(reader)
+                if len(header) > MAX_COLUMNS:
+                    raise serializers.ValidationError(
+                        {"dataset": f"Too many columns. Max is {MAX_COLUMNS}."}
+                    )
+            except StopIteration:
+                raise serializers.ValidationError({"dataset": "Empty file."})
+
+            # Check rows (iterating is cheaper than loading all at once)
+            row_count = 0
+            for _ in reader:
+                row_count += 1
+                if row_count > MAX_ROWS:
+                    raise serializers.ValidationError(
+                        {"dataset": f"Too many rows. Max is {MAX_ROWS}."}
+                    )
+
+        except csv.Error:
+            raise serializers.ValidationError(
+                {"dataset": "Invalid CSV format."})
+
         try:
             headers, _, matrix = parse_csv_to_matrix(dataset)
         except ValueError as exc:
@@ -73,16 +108,6 @@ class RunInputSerializer(serializers.Serializer):
         if word_count > MAX_WORD_COUNT:
             raise serializers.ValidationError(
                 f"Prompt exceeds the {MAX_WORD_COUNT} word limit. (Current: {word_count} words)"
-            )
-
-        if len(headers) > MAX_COLUMNS or matrix.shape[0] > MAX_ROWS:
-            raise serializers.ValidationError(
-                {
-                    "dataset": (
-                        f"CSV too large. Limit is {MAX_ROWS:,} rows and "
-                        f"{MAX_COLUMNS:,} columns."
-                    )
-                }
             )
 
         attrs["headers"] = headers

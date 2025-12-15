@@ -22,6 +22,7 @@ def model_control(model_type, single_param_set):
     elif model_type == "hierarchical":
         model_type = AgglomerativeClustering(**single_param_set)
     else:
-        raise
+        raise ValueError(
+            f"Model type '{model_type}' is not supported or recognized.")
 
     return model_type, is_supervised

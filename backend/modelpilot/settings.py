@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
+from django.core.exceptions import ImproperlyConfigured
 
 # Load environment variables from backend/.env if present
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -126,6 +127,11 @@ else:
             },
         }
     }
+    if not os.getenv(
+        "DJANGO_SECRET_KEY",
+    ):
+        raise ImproperlyConfigured(
+            "The DJANGO_SECRET_KEY environment variable is not set!")
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -161,6 +167,9 @@ REST_FRAMEWORK = {
     ],
 }
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False
+
+CORS_ALLOWED_ORIGINS = [
+    'https://model-pilot.vercel.app/', 'http://localhost:5173']
 
 SAMPLE_DATA_DIR = BASE_DIR / "api" / "sample_data"

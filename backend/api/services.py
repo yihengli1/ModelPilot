@@ -76,7 +76,7 @@ def generate_plan_gpt(
         )
     except Exception as exc:
         print(exc)
-        raise
+        raise ValueError(exc)
 
     usage_data = completion.usage
     content = completion.choices[0].message.content
@@ -121,7 +121,7 @@ def generate_target_gpt(
         )
     except Exception as exc:
         print(exc)
-        raise
+        raise ValueError(exc)
     content = completion.choices[0].message.content
 
     target_column = content.strip().strip('"').strip("'")
@@ -186,7 +186,7 @@ def generate_refined_plan_gpt(
 
     except Exception as exc:
         print(exc)
-        raise
+        raise ValueError(exc)
 
 
 def summarize_and_select_features(

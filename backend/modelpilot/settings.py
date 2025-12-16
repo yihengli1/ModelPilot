@@ -170,6 +170,6 @@ REST_FRAMEWORK = {
 CORS_ALLOW_ALL_ORIGINS = False
 
 CORS_ALLOWED_ORIGINS = [
-    'https://model-pilot.vercel.app/', 'http://localhost:5173']
+    'https://model-pilot.vercel.app', 'http://localhost:5173']
 
 SAMPLE_DATA_DIR = BASE_DIR / "api" / "sample_data"

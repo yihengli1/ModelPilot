@@ -9,6 +9,13 @@ from .pipeline import training_pipeline
 from .models import Dataset
 
 
+class HealthCheckView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response({"status": "awake"}, status=status.HTTP_200_OK)
+
+
 class CreateRunView(APIView):
     def post(self, request):
 

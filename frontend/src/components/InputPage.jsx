@@ -25,6 +25,7 @@ function InputPage() {
 	const [submitError, setSubmitError] = useState("");
 	const navigate = useNavigate();
 	const [examples, setExamples] = useState([]);
+	const [isWakingUp, setIsWakingUp] = useState(true);
 
 	const headers = rows.length ? rows[0] : [];
 	const bodyRows = useMemo(
@@ -44,7 +45,14 @@ function InputPage() {
 			const data = await getExampleDataset();
 			setExamples(data);
 		}
+
+		async function wakeUpServer() {
+			await wakeUpServer();
+			setIsWakingUp(false);
+		}
+
 		fetchExamples();
+		wakeUpServer();
 	}, []);
 
 	const resetFileState = () => {
@@ -199,6 +207,12 @@ function InputPage() {
 						Paste or upload a CSV, preview it, and add optional context for the
 						LLM.
 					</p>
+					{isWakingUp && (
+						<p className="text-xs text-orange-500 mt-2 text-center">
+							Note: Using free tier hosting. Server may take up to 60s to wake
+							up.
+						</p>
+					)}
 				</header>
 
 				<section className="flex gap-6 flex-col">

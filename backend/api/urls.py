@@ -2,7 +2,7 @@ from django.urls import include, path
 
 from rest_framework.routers import DefaultRouter
 
-from .views import CreateRunView, DatasetListCreateView, DatasetDetailView, ExampleDatasetListView
+from .views import CreateRunView, DatasetListCreateView, DatasetDetailView, ExampleDatasetListView, HealthCheckView
 
 router = DefaultRouter()
 
@@ -16,4 +16,5 @@ urlpatterns = [
     path("datasets/examples/", ExampleDatasetListView.as_view(),
          name="get-example-datasets"),
     path("", include(router.urls)),
+    path("health/", HealthCheckView.as_view(), name="health-check"),
 ]

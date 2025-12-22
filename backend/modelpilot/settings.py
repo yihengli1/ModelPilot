@@ -105,6 +105,7 @@ WSGI_APPLICATION = "modelpilot.wsgi.application"
 ASGI_APPLICATION = "modelpilot.asgi.application"
 
 if DEBUG:
+    print("Using SQL Lite DB")
     DATABASES = {
 
         "default": {
@@ -113,6 +114,7 @@ if DEBUG:
         }
     }
 else:
+    print("Using MySQL AWS RDS")
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',

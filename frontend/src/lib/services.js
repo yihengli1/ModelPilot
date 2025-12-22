@@ -65,3 +65,12 @@ export const getExampleDataset = async () => {
 
 	return await resp.json();
 };
+
+export const wakeUpServer = async () => {
+	try {
+		await fetch(`${API_BASE_URL}/health/`, { method: "GET" });
+		console.log("Server is awake!");
+	} catch (err) {
+		console.error("Server wake-up failed (or is still booting):", err);
+	}
+};

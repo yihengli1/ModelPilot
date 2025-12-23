@@ -14,7 +14,7 @@ class LinearRegressionGD:
         self,
         loss,
         learning_rate,
-        epochs,
+        epochs: 1,
         batch_size,
         huber_delta,
         fit_intercept: True,
@@ -28,7 +28,9 @@ class LinearRegressionGD:
         self.fit_intercept = bool(fit_intercept)
         self.random_state = int(random_state)
 
+        # w
         self.coef_ = None
+        # b
         self.intercept_ = 0.0
 
     def _as_torch(self, X, y=None):
@@ -82,24 +84,25 @@ class LinearRegressionGD:
 
         for _ in range(max(self.epochs, 1)):
             perm = torch.randperm(n)
-        for i in range(0, n, bs):
-            idx = perm[i:i+bs]
-            Xb = X_t[idx]
-            yb = y_t[idx]
+            for i in range(0, n, bs):
+                idx = perm[i:i+bs]
+                Xb = X_t[idx]
+                yb = y_t[idx]
 
-            preds = Xb @ w
-        if b is not None:
-            preds = preds + b
+                preds = Xb @ w
+                if b is not None:
+                    preds = preds + b
 
-            loss = self._loss_fn(preds, yb)
-            loss.backward()
+                loss = self._loss_fn(preds, yb)
+                loss.backward()
 
-        with torch.no_grad():
-            w -= lr * w.grad
-            w.grad.zero_()
-        if b is not None:
-            b -= lr * b.grad
-            b.grad.zero_()
+                # untrack
+                with torch.no_grad():
+                    w -= lr * w.grad
+                    w.grad.zero_()
+                    if b is not None:
+                        b -= lr * b.grad
+                        b.grad.zero_()
 
             self.coef_ = w.detach().cpu().numpy().reshape(-1)
             self.intercept_ = float(b.detach().cpu().numpy()[

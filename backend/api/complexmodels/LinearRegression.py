@@ -12,18 +12,18 @@ class LinearRegressionGD:
 
     def __init__(
         self,
-        loss: str = "l2",
-        learning_rate: float = 0.01,
-        epochs: int = 500,
-        batch_size: int | None = None,
-        huber_delta: float = 1.0,
-        fit_intercept: bool = True,
+        loss,
+        learning_rate,
+        epochs,
+        batch_size,
+        huber_delta,
+        fit_intercept: True,
         random_state: int = 42,
     ):
-        self.loss = (loss or "l2").lower()
+        self.loss = loss
         self.learning_rate = float(learning_rate)
         self.epochs = int(epochs)
-        self.batch_size = None if batch_size in (None, 0) else int(batch_size)
+        self.batch_size = int(batch_size)
         self.huber_delta = float(huber_delta)
         self.fit_intercept = bool(fit_intercept)
         self.random_state = int(random_state)
@@ -65,7 +65,7 @@ class LinearRegressionGD:
                 abs_diff, torch.tensor(d, device=diff.device))
             lin = abs_diff - quad
             return (0.5 * quad ** 2 + d * lin).mean()
-        return (diff ** 2).mean()
+        raise ValueError("Loss function not supported: ", self.loss)
 
     def fit(self, X, y):
         torch.manual_seed(self.random_state)

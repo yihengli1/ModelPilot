@@ -30,6 +30,7 @@ def _split_dataset(
     target_column: Any,
     data_split: Dict[str, Any],
     headers: Optional[List[str]] = None,
+    problem_type: str = "classification",
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, np.ndarray]:
     target_idx = _select_target_index(target_column, headers)
 
@@ -44,7 +45,16 @@ def _split_dataset(
     if target_idx != -1:
         y = dataset[:, target_idx]
         X = np.delete(dataset, target_idx, axis=1)
-        classes, y_encoded = np.unique(y, return_inverse=True)
+        if problem_type.lower() == "regression":
+            try:
+                y_encoded = np.asarray(y, dtype=float)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    "Target column could not be converted to float for regression.") from exc
+            classes = np.array([])
+        else:
+            classes, y_encoded = np.unique(y, return_inverse=True)
+
     # Unsupervised
     else:
         X = dataset
@@ -70,9 +80,10 @@ def _split_dataset(
     X_test = torch.tensor(X_float[test_idx], dtype=torch.float32)
 
     if target_idx != -1:
-        y_train = torch.tensor(y_encoded[train_idx], dtype=torch.long)
-        y_val = torch.tensor(y_encoded[val_idx], dtype=torch.long)
-        y_test = torch.tensor(y_encoded[test_idx], dtype=torch.long)
+        y_dtype = torch.float32 if problem_type.lower() == "regression" else torch.long
+        y_train = torch.tensor(y_encoded[train_idx], dtype=y_dtype)
+        y_val = torch.tensor(y_encoded[val_idx], dtype=y_dtype)
+        y_test = torch.tensor(y_encoded[test_idx], dtype=y_dtype)
     else:
         y_train = torch.empty(0, dtype=torch.long)
         y_val = torch.empty(0, dtype=torch.long)
@@ -111,13 +122,13 @@ def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] 
     # Data Prep
     print("Preparing Datasets")
     X_train, y_train, X_val, y_val, X_test, y_test, classes = prepare_datasets(
-        dataset, target_column, data_split, headers)
+        dataset, target_column, data_split, problem_type, headers)
 
     # # Split Model, PyTorch training
     print("Running Initial Model")
     initial_results = execute_training_cycle(
         X_train, y_train, X_val, y_val, X_test, y_test, classes,
-        model_plans
+        model_plans, problem_type
     )
 
     # Based on results 2 call
@@ -129,7 +140,7 @@ def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] 
     # iterate over range of models/hyperparams/
     print("Refining model")
     refined_results = refineModel(
-        refined_models, X_train, y_train, X_val, y_val, X_test, y_test, classes)
+        refined_models, X_train, y_train, X_val, y_val, X_test, y_test, classes, problem_type)
 
     # best validation error
     all_results = initial_results + refined_results
@@ -156,7 +167,7 @@ def _select_top_models(results: List[Dict[str, Any]], top_k: int = 3) -> List[Di
     return sorted_results[:top_k]
 
 
-def refineModel(refined_models, X_train, y_train, X_val, y_val, X_test, y_test, classes):
+def refineModel(refined_models, X_train, y_train, X_val, y_val, X_test, y_test, classes, problem_type):
 
     refined_model_configs = refined_models.get("refined_models", [])
     refined_plans = []
@@ -237,10 +248,11 @@ def prepare_datasets(
     dataset,
     target_column,
     data_split,
+    problem_type,
     headers,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
     X_train, y_train, X_val, y_val, X_test, y_test, classes = _split_dataset(
-        dataset, target_column, data_split, headers=headers
+        dataset, target_column, data_split, problem_type=problem_type, headers=headers
     )
 
     return (
@@ -253,7 +265,7 @@ def prepare_datasets(
 
 def execute_training_cycle(
     X_train, y_train, X_val, y_val, X_test, y_test, classes,
-    model_plans
+    model_plans, problem_type
 ) -> List[Dict[str, Any]]:
     from sklearn.model_selection import ParameterGrid
     results = []
@@ -272,7 +284,7 @@ def execute_training_cycle(
                     model_type, single_param_set)
 
                 metrics = training_models(
-                    model, is_supervised, X_train, X_val, X_test, y_train, y_val, y_test)
+                    model, is_supervised, problem_type, X_train, X_val, X_test, y_train, y_val, y_test)
 
                 artifact = serialize_artifact(model, model_type, metrics)
 
@@ -289,17 +301,57 @@ def execute_training_cycle(
     return results
 
 
-def training_models(model, is_supervised, X_train, X_val, X_test, y_train, y_val, y_test):
+def training_models(model, is_supervised, problem_type, X_train, X_val, X_test, y_train, y_val, y_test):
     metrics = {}
     metrics["supervised"] = is_supervised
     from sklearn.metrics import accuracy_score, silhouette_score
 
+    pt = problem_type.lower()
     if is_supervised:
         model.fit(X_train, y_train)
-        val_acc = accuracy_score(y_val, model.predict(X_val))
-        test_acc = accuracy_score(y_test, model.predict(X_test))
-        metrics["val_accuracy"] = val_acc
-        metrics["test_accuracy"] = test_acc
+        if pt == "regression":
+            val_pred = model.predict(X_val)
+            test_pred = model.predict(X_test)
+            yv = np.asarray(y_val, dtype=float).reshape(-1)
+            yt = np.asarray(y_test, dtype=float).reshape(-1)
+
+            val_mse = float(np.mean((val_pred - yv) ** 2))
+            test_mse = float(np.mean((test_pred - yt) ** 2))
+            val_mae = float(np.mean(np.abs(val_pred - yv)))
+            test_mae = float(np.mean(np.abs(test_pred - yt)))
+
+            loss_name = getattr(model, "loss", "l2")
+            loss_name = (loss_name or "l2").lower()
+            if loss_name in ("l1", "mae", "absolute"):
+                val_loss = val_mae
+                test_loss = test_mae
+            elif loss_name in ("huber", "smooth_l1"):
+                d = float(getattr(model, "huber_delta", 1.0))
+
+                def huber(a):
+                    ad = np.abs(a)
+                    q = np.minimum(ad, d)
+                    lin = ad - q
+                    return np.mean(0.5 * q**2 + d * lin)
+                val_loss = float(huber(val_pred - yv))
+                test_loss = float(huber(test_pred - yt))
+            else:
+                val_loss = val_mse
+                test_loss = test_mse
+
+            metrics["val_loss"] = val_loss
+            metrics["test_loss"] = test_loss
+            metrics["val_mse"] = val_mse
+            metrics["test_mse"] = test_mse
+            metrics["val_mae"] = val_mae
+            metrics["test_mae"] = test_mae
+            metrics["val_accuracy"] = -val_loss
+            metrics["test_accuracy"] = -test_loss
+        else:
+            val_acc = accuracy_score(y_val, model.predict(X_val))
+            test_acc = accuracy_score(y_test, model.predict(X_test))
+            metrics["val_accuracy"] = float(val_acc)
+            metrics["test_accuracy"] = float(test_acc)
     else:
         if hasattr(model, "fit_predict"):
             train_preds = model.fit_predict(X_train)

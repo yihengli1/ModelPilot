@@ -104,6 +104,8 @@ TEMPLATES = [
 WSGI_APPLICATION = "modelpilot.wsgi.application"
 ASGI_APPLICATION = "modelpilot.asgi.application"
 
+CORS_ALLOW_ALL_ORIGINS = False
+
 if DEBUG:
     print("Using SQL Lite DB")
     DATABASES = {
@@ -113,6 +115,10 @@ if DEBUG:
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
+
+    CORS_ALLOWED_ORIGINS = [
+        'https://model-pilot.vercel.app', 'http://localhost:5173']
+
 else:
     print("Using MySQL AWS RDS")
     DATABASES = {
@@ -134,6 +140,9 @@ else:
     ):
         raise ImproperlyConfigured(
             "The DJANGO_SECRET_KEY environment variable is not set!")
+
+    CORS_ALLOWED_ORIGINS = [
+        'https://model-pilot.vercel.app']
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -168,10 +177,5 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.AllowAny",
     ],
 }
-
-CORS_ALLOW_ALL_ORIGINS = False
-
-CORS_ALLOWED_ORIGINS = [
-    'https://model-pilot.vercel.app', 'http://localhost:5173']
 
 SAMPLE_DATA_DIR = BASE_DIR / "api" / "sample_data"

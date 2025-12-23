@@ -8,7 +8,7 @@ from rest_framework.response import Response
 import torch
 
 from .services import generate_plan_gpt, generate_target_gpt, summarize_and_select_features, generate_refined_plan_gpt
-from .modelling import model_control
+from .modelling import model_control, serialize_artifact
 
 
 def _select_target_index(target_column: Any, headers: Optional[List[str]] = None) -> int:
@@ -325,49 +325,3 @@ def training_models(model, is_supervised, X_train, X_val, X_test, y_train, y_val
             metrics["val_accuracy"] = -1.0
             metrics["train_accuracy"] = -1.0
     return metrics
-
-
-def serialize_artifact(classifier, model, metrics):
-    try:
-        if model == "naive_bayes":
-            return {
-                "classes": classifier.classes_.tolist(),
-                "means": classifier.theta_.tolist(),
-                "vars": classifier.var_.tolist(),
-            }
-        elif model == "decision_tree":
-            return {
-                "n_features": classifier.n_features_in_,
-                "depth": classifier.get_depth(),
-                "n_leaves": classifier.get_n_leaves(),
-            }
-        elif model == "knn":
-            return {
-                "n_samples_fit": classifier.n_samples_fit_,
-                "n_features": classifier.n_features_in_,
-                "effective_metric": classifier.effective_metric_,
-            }
-        elif model == "kmeans":
-            return {
-                "n_clusters": classifier.n_clusters,
-                "inertia": float(classifier.inertia_),
-                "silhouette_score": metrics.get("train_silhouette", -1),
-            }
-        elif model == "dbscan":
-            return {
-                "n_samples_fit": classifier.n_samples_fit_,
-                "classes_found": len(set(classifier.classes_)),
-                "silhouette_score": metrics.get("train_silhouette", -1),
-            }
-        elif model == "hierarchical":
-            return {
-                "n_clusters": classifier.n_clusters_,
-                "labels": classifier.labels_.tolist(),
-                "n_leaves": classifier.n_leaves_,
-                "children": classifier.children_.tolist() if hasattr(classifier, 'children_') else [],
-                "silhouette_score": metrics.get("train_silhouette", -1),
-            }
-        else:
-            return {}
-    except Exception:
-        return {"error": "Could not serialize model artifact"}

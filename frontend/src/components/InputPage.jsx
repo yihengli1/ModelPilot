@@ -1,6 +1,11 @@
 import { useMemo, useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { postCreate, getDataset, getExampleDataset } from "../lib/services";
+import {
+	postCreate,
+	getDataset,
+	getExampleDataset,
+	wakeUpServer,
+} from "../lib/services";
 import LoadingSpinner from "./LoadingSpinner";
 
 function InputPage() {
@@ -46,13 +51,13 @@ function InputPage() {
 			setExamples(data);
 		}
 
-		async function wakeUpServer() {
+		async function triggerWakeUp() {
 			await wakeUpServer();
 			setIsWakingUp(false);
 		}
 
 		fetchExamples();
-		wakeUpServer();
+		triggerWakeUp();
 	}, []);
 
 	const resetFileState = () => {

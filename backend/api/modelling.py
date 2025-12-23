@@ -10,13 +10,17 @@ def model_control(model_type, single_param_set):
     is_supervised = True
     if model_type == "naive_bayes":
         model_type = GaussianNB(**single_param_set)
+        is_supervised = True
     elif model_type == "decision_tree":
         model_type = DecisionTreeClassifier(
             **single_param_set, random_state=42)
+        is_supervised = True
     elif model_type == "knn":
         model_type = KNeighborsClassifier(**single_param_set)
+        is_supervised = True
     elif model_type == "linear_regression":
         model_type = LinearRegressionGD(**single_param_set)
+        is_supervised = True
     elif model_type == "kmeans":
         model_type = KMeans(**single_param_set, random_state=42)
         is_supervised = False
@@ -25,6 +29,7 @@ def model_control(model_type, single_param_set):
         is_supervised = False
     elif model_type == "hierarchical":
         model_type = AgglomerativeClustering(**single_param_set)
+        is_supervised = False
     else:
         raise ValueError(
             f"Model type '{model_type}' is not supported or recognized.")

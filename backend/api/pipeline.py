@@ -34,6 +34,7 @@ def _split_dataset(
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, np.ndarray]:
     target_idx = _select_target_index(target_column, headers)
 
+    ratios = None
     if data_split is not None:
         ratios = data_split.get("train_val_test")
     if ratios is None:
@@ -339,14 +340,9 @@ def training_models(model, is_supervised, problem_type, X_train, X_val, X_test, 
                 val_loss = val_mse
                 test_loss = test_mse
 
-            metrics["val_loss"] = val_loss
-            metrics["test_loss"] = test_loss
-            metrics["val_mse"] = val_mse
-            metrics["test_mse"] = test_mse
-            metrics["val_mae"] = val_mae
-            metrics["test_mae"] = test_mae
             metrics["val_accuracy"] = -val_loss
             metrics["test_accuracy"] = -test_loss
+        # Non-regression
         else:
             val_acc = accuracy_score(y_val, model.predict(X_val))
             test_acc = accuracy_score(y_test, model.predict(X_test))

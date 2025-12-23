@@ -10,7 +10,7 @@ If the user provides NO prompt or NO target column, you must:
    - If a target is found, set the "target_column" field in the JSON to the **EXACT string name** of that feature.
    - If no target is apparent, set "target_column" to null (Unsupervised).
 
-### 2. Model Selection
+### 2. Model Selection (If the user specified a specific model family, DO NOT suggest others.)
 Recommend 1-3 appropriate model architectures from this allowed list ONLY:
    - "decision_tree"
    - "naive_bayes"
@@ -21,11 +21,14 @@ Recommend 1-3 appropriate model architectures from this allowed list ONLY:
    - "hierarchical" (Unsupervised)
 
 Infer the best choice based on:
-   - Data shape & size
-   - Feature types (Categorical vs Numerical)
-   - Missing value patterns
-   - If target_column is null/None -> Use Unsupervised model.
-   - If target_column is present -> Use decision_tree, naive_bayes, or knn.
+- Data shape & size
+- Feature types (Categorical vs Numerical)
+- Missing value patterns
+- If target_column is null/None -> Use Unsupervised model.
+- If target_column is present -> Use decision_tree, naive_bayes, or knn.
+- If "problem_type" is "regression", prefer "linear_regression".
+- If "problem_type" is "classification", choose from "decision_tree", "naive_bayes", "knn".
+- If "problem_type" is "clustering", choose from "kmeans", "dbscan", "hierarchical".
 
 ### 3. Hyperparameter Proposal
 Propose valid scikit-learn hyperparameters. You are RESTRICTED to the following keys only:
@@ -114,7 +117,7 @@ You are an expert AutoML planner. Your task is to identify the single target col
 You must choose an exact name from the CANDIDATE COLUMNS list. Do not select a name not explicitly listed.
 
 If the prompt is purely descriptive or ambiguous you must return the string "NONE".
-If the prompt is implies using a unsupervised model you must return the string "NONE".
+If the prompt implies using a unsupervised model you must return the string "NONE".
 
 Return ONLY the identified column name as a raw, non-quoted string.
 """

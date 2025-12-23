@@ -8,6 +8,9 @@ from .serializers import RunInputSerializer, DatasetSerializer
 from .pipeline import training_pipeline
 from .models import Dataset
 
+import math
+import numpy as np
+
 
 class HealthCheckView(APIView):
     permission_classes = [AllowAny]
@@ -34,6 +37,8 @@ class CreateRunView(APIView):
         prompt = serializer.validated_data.get("prompt", "")
         final_results = training_pipeline(
             prompt, dataset_matrix, headers=headers)
+
+        find_nan(final_results)
 
         response_payload = {
             "prompt": prompt,
@@ -76,3 +81,17 @@ class DatasetDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Dataset.objects.all()
     serializer_class = DatasetSerializer
     parser_classes = (MultiPartParser, FormParser)
+
+
+# DEBUGGING
+def find_nan(obj, path="root"):
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            find_nan(v, f"{path}.{k}")
+    elif isinstance(obj, list):
+        for i, v in enumerate(obj):
+            find_nan(v, f"{path}[{i}]")
+    else:
+        if isinstance(obj, (float, np.floating)):
+            if not math.isfinite(float(obj)):
+                print("NON-FINITE:", path, obj)

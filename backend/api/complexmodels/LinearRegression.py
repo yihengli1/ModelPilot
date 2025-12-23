@@ -13,17 +13,17 @@ class LinearRegressionGD:
     def __init__(
         self,
         loss,
-        learning_rate,
-        epochs: 1,
-        batch_size,
-        huber_delta,
-        fit_intercept: True,
+        batch_size: int | None = None,
+        huber_delta: float = 1.0,
+        fit_intercept: bool = True,
         random_state: int = 42,
+        learning_rate: float = 0.01,
+        epochs: int = 500,
     ):
         self.loss = loss
         self.learning_rate = float(learning_rate)
         self.epochs = int(epochs)
-        self.batch_size = int(batch_size)
+        self.batch_size = None if batch_size in (None, 0) else int(batch_size)
         self.huber_delta = float(huber_delta)
         self.fit_intercept = bool(fit_intercept)
         self.random_state = int(random_state)

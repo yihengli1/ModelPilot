@@ -82,7 +82,7 @@ Propose a split strategy:
 Produce results in this EXACT JSON format. Do not include markdown formatting, code blocks, or conversational text outside the JSON.
 
 {
-  "problem_type": "classification",
+  "problem_type": "classification" | "regression" | "clustering",
   "target_column": "ExactColumnName",
   "recommended_models": [
     {

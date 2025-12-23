@@ -180,7 +180,7 @@ def refineModel(refined_models, X_train, y_train, X_val, y_val, X_test, y_test, 
 
     return execute_training_cycle(
         X_train, y_train, X_val, y_val, X_test, y_test, classes,
-        refined_plans
+        refined_plans, problem_type
     )
 
 

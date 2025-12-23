@@ -47,6 +47,7 @@ function InputPage() {
 
 	useEffect(() => {
 		async function fetchExamples() {
+			if (examples.length != 0) return;
 			const data = await getExampleDataset();
 			setExamples(data);
 		}

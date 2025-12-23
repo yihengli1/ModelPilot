@@ -15,6 +15,7 @@ Recommend 1-3 appropriate model architectures from this allowed list ONLY:
    - "decision_tree"
    - "naive_bayes"
    - "knn"
+   - "linear_regression"
    - "kmeans" (Unsupervised)
    - "dbscan" (Unsupervised)
    - "hierarchical" (Unsupervised)
@@ -63,6 +64,12 @@ For 'hierarchical' (AgglomerativeClustering):
   - "linkage": ("ward", "complete", "average", "single")
      * Note: "ward" only works with "euclidean".
 
+For 'linear_regression':
+- "loss": one of ["l2", "l1", "huber"]
+- "learning_rate": float (e.g., 0.001–0.1)
+- "epochs": int (e.g., 200–2000)
+- "huber_delta": float (only if loss="huber")
+
 
 DO NOT generate parameters outside this list (e.g., do not use 'learning_rate' or 'n_estimators').
 
@@ -96,7 +103,7 @@ Produce results in this EXACT JSON format. Do not include markdown formatting, c
 
 ### CONSTRAINTS
 1. "target_column": Must be the **exact string** from the feature list. NO extra text (e.g., "g3 (primary)" is FORBIDDEN). If Unsupervised, use null.
-2. "model": Must be exactly "decision_tree" or "naive_bayes".
+2. "model": Must be one of: "decision_tree", "naive_bayes", "knn", "linear_regression", "kmeans", "dbscan", "hierarchical".
 3. "train_val_test": Must be a list of floats summing to 1.0.
 """
 
@@ -136,6 +143,7 @@ REFINEMENT_CONTEXT = """
     - **decision_tree**: criterion, max_depth, min_samples_split, min_samples_leaf, max_features.
     - **knn**: n_neighbors, weights, metric, p.
     - **naive_bayes**: N/A
+    - **linear_regression**: loss, learning_rate, epochs, huber_delta.
     - **kmeans**: n_clusters, init, n_init.
     - **dbscan**: eps, min_samples, metric, algorithm, p.
     - **hierarchical**: n_clusters, metric, linkage.

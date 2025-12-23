@@ -1,3 +1,5 @@
+from complexmodels.LinearRegression import LinearRegressionGD
+
 
 def model_control(model_type, single_param_set):
     from sklearn.neighbors import KNeighborsClassifier
@@ -13,6 +15,8 @@ def model_control(model_type, single_param_set):
             **single_param_set, random_state=42)
     elif model_type == "knn":
         model_type = KNeighborsClassifier(**single_param_set)
+    elif model_type == "linear_regression":
+        model_type = LinearRegressionGD(**single_param_set)
     elif model_type == "kmeans":
         model_type = KMeans(**single_param_set, random_state=42)
         is_supervised = False
@@ -47,6 +51,12 @@ def serialize_artifact(classifier, model, metrics):
                 "n_samples_fit": classifier.n_samples_fit_,
                 "n_features": classifier.n_features_in_,
                 "effective_metric": classifier.effective_metric_,
+            }
+        elif model == "linear_regression":
+            return {
+                "coef": (classifier.coef_.tolist() if hasattr(classifier, "coef_") and classifier.coef_ is not None else []),
+                "intercept": float(getattr(classifier, "intercept_", 0.0)),
+                "loss": getattr(classifier, "loss", "l2"),
             }
         elif model == "kmeans":
             return {

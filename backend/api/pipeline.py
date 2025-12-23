@@ -303,16 +303,18 @@ def execute_training_cycle(
 
 
 def training_models(model, is_supervised, problem_type, X_train, X_val, X_test, y_train, y_val, y_test):
-    metrics = {}
-    metrics["supervised"] = is_supervised
     from sklearn.metrics import accuracy_score, silhouette_score
+
+    metrics = {"supervised": is_supervised}
 
     pt = problem_type.lower()
     if is_supervised:
         model.fit(X_train, y_train)
         if pt == "regression":
-            val_pred = model.predict(X_val)
-            test_pred = model.predict(X_test)
+            val_pred = np.asarray(model.predict(
+                X_val), dtype=float).reshape(-1)
+            test_pred = np.asarray(model.predict(
+                X_test), dtype=float).reshape(-1)
             yv = np.asarray(y_val, dtype=float).reshape(-1)
             yt = np.asarray(y_test, dtype=float).reshape(-1)
 
@@ -321,55 +323,40 @@ def training_models(model, is_supervised, problem_type, X_train, X_val, X_test, 
             val_mae = float(np.mean(np.abs(val_pred - yv)))
             test_mae = float(np.mean(np.abs(test_pred - yt)))
 
-            loss_name = getattr(model, "loss", "l2")
-            loss_name = (loss_name or "l2").lower()
-            if loss_name in ("l1", "mae", "absolute"):
-                val_loss = val_mae
-                test_loss = test_mae
-            elif loss_name in ("huber", "smooth_l1"):
-                d = float(getattr(model, "huber_delta", 1.0))
-
-                def huber(a):
-                    ad = np.abs(a)
-                    q = np.minimum(ad, d)
-                    lin = ad - q
-                    return np.mean(0.5 * q**2 + d * lin)
-                val_loss = float(huber(val_pred - yv))
-                test_loss = float(huber(test_pred - yt))
+            loss_name = (getattr(model, "loss", "l2") or "l2").lower()
+            if loss_name in ("l1"):
+                val_loss, test_loss = val_mae, test_mae
+            # l2 + huber
             else:
-                val_loss = val_mse
-                test_loss = test_mse
+                val_loss, test_loss = val_mse, test_mse
+
+            metrics["val_loss"] = val_loss
+            metrics["test_loss"] = test_loss
+            metrics["val_mse"] = val_mse
+            metrics["test_mse"] = test_mse
+            metrics["val_mae"] = val_mae
+            metrics["test_mae"] = test_mae
 
             metrics["val_accuracy"] = -val_loss
             metrics["test_accuracy"] = -test_loss
         # Non-regression
         else:
-            val_acc = accuracy_score(y_val, model.predict(X_val))
-            test_acc = accuracy_score(y_test, model.predict(X_test))
-            metrics["val_accuracy"] = float(val_acc)
-            metrics["test_accuracy"] = float(test_acc)
+            metrics["val_accuracy"] = float(
+                accuracy_score(y_val, model.predict(X_val)))
+            metrics["test_accuracy"] = float(
+                accuracy_score(y_test, model.predict(X_test)))
     else:
         if hasattr(model, "fit_predict"):
-            train_preds = model.fit_predict(X_train)
+            labels = model.fit_predict(X_train)
         else:
             model.fit(X_train)
-            train_preds = model.labels_
+            labels = getattr(model, "labels_", getattr(model, "labels", None))
 
-        n_labels_train = len(set(train_preds))
-        if 1 < n_labels_train < len(X_train):
-            metrics["train_silhouette"] = silhouette_score(
-                X_train, train_preds)
+        if labels is None or len(set(labels)) <= 1 or len(set(labels)) >= len(X_train):
+            score = -1.0
         else:
-            metrics["train_silhouette"] = -1.0
-
-        if 1 < n_labels_train < len(X_train):
-            score = silhouette_score(X_train, train_preds)
-            metrics["train_silhouette"] = score
-            # Use Silhouette as the "Accuracy" proxy for sorting later
-            metrics["val_accuracy"] = score
-            metrics["train_accuracy"] = score
-        else:
-            metrics["train_silhouette"] = -1.0
-            metrics["val_accuracy"] = -1.0
-            metrics["train_accuracy"] = -1.0
+            score = float(silhouette_score(X_train, labels))
+        metrics["train_silhouette"] = score
+        metrics["val_accuracy"] = score
+        metrics["train_accuracy"] = score
     return metrics

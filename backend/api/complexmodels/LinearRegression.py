@@ -70,9 +70,16 @@ class LinearRegressionGD:
         raise ValueError("Loss function not supported: ", self.loss)
 
     def fit(self, X, y):
+
         torch.manual_seed(self.random_state)
         X_t, y_t = self._as_torch(X, y)
         n, d = X_t.shape
+
+        # standardize
+        self.x_mean_ = X_t.mean(dim=0, keepdim=True)
+        self.x_std_ = X_t.std(dim=0, keepdim=True)
+        self.x_std_[self.x_std_ == 0] = 1.0
+        X_t = (X_t - self.x_mean_) / self.x_std_
 
         w = torch.zeros((d, 1), dtype=torch.float32,
                         requires_grad=True)
@@ -96,6 +103,10 @@ class LinearRegressionGD:
                 loss = self._loss_fn(preds, yb)
                 loss.backward()
 
+                if not torch.isfinite(loss):
+                    raise ValueError(
+                        "Diverged: loss became NaN/Inf. Try scaling X or smaller learning_rate.")
+
                 # untrack
                 with torch.no_grad():
                     w -= lr * w.grad
@@ -111,6 +122,8 @@ class LinearRegressionGD:
 
     def predict(self, X):
         X_t = self._as_torch(X)
+        if hasattr(self, "x_mean_") and hasattr(self, "x_std_"):
+            X_t = (X_t - self.x_mean_) / self.x_std_
         w = torch.tensor(self.coef_, dtype=torch.float32).unsqueeze(1)
         preds = X_t @ w
         if self.fit_intercept:

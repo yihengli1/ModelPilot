@@ -1,4 +1,4 @@
-from .complexmodels.linear_regression import LinearRegressionGD
+from .complexmodels.linear_regression import LinearRegressionTorchNN
 
 
 def model_control(model_type, single_param_set):
@@ -19,7 +19,7 @@ def model_control(model_type, single_param_set):
         model_type = KNeighborsClassifier(**single_param_set)
         is_supervised = True
     elif model_type == "linear_regression":
-        model_type = LinearRegressionGD(**single_param_set)
+        model_type = LinearRegressionTorchNN(**single_param_set)
         is_supervised = True
     elif model_type == "kmeans":
         model_type = KMeans(**single_param_set, random_state=42)

@@ -11,6 +11,9 @@ def reg_penalty_linear(layer: torch.nn.Linear, reg: str, alpha: float, l1_ratio:
     if reg == "l1":
         return alpha * w.abs().sum()
 
+    if reg == "l2":
+        return 0.5 * alpha * (w ** 2).sum()
+
     if reg == "elasticnet":
         r = min(max(l1_ratio, 0.0), 1.0)
         l1 = w.abs().sum()

@@ -31,7 +31,7 @@ Infer the best choice based on:
 - If "problem_type" is "clustering", choose from "kmeans", "dbscan", "hierarchical".
 
 ### 3. Hyperparameter Proposal
-Propose valid scikit-learn hyperparameters. You are RESTRICTED to the following keys only:
+Propose valid hyperparameters. You are RESTRICTED to the following keys only:
 
 For 'decision_tree':
    - "criterion": ("gini", "entropy", "log_loss")
@@ -68,10 +68,14 @@ For 'hierarchical' (AgglomerativeClustering):
      * Note: "ward" only works with "euclidean".
 
 For 'linear_regression':
-- "loss": one of ["l2", "l1", "huber"]
-- "learning_rate": float (e.g., 0.001–0.1)
-- "epochs": int (e.g., 200–2000)
-- "huber_delta": float (only if loss="huber")
+   - "loss": one of ["l2", "l1", "huber"]
+   - "optimizer": one of ["sgd", "adam"]
+   - "learning_rate": float (e.g., 0.001–0.1)
+   - "epochs": int (e.g., 200–2000)
+   - "batch_size": int (1 = SGD, n = full GD, or 32–128 = minibatch)
+   - "huber_delta": float (only used when loss="huber")
+   - "regularization": one of ["none", "l2", "l1"]
+   - "alpha": float (regularization strength, e.g., 0.0–0.1)
 
 
 DO NOT generate parameters outside this list (e.g., do not use 'learning_rate' or 'n_estimators').
@@ -143,13 +147,50 @@ REFINEMENT_CONTEXT = """
     - This ensures we generate ~27 candidates per model, not hundreds.
 
     ### ALLOWED MODELS & PARAMS
-    - **decision_tree**: criterion, max_depth, min_samples_split, min_samples_leaf, max_features.
-    - **knn**: n_neighbors, weights, metric, p.
-    - **naive_bayes**: N/A
-    - **linear_regression**: loss, learning_rate, epochs, huber_delta.
-    - **kmeans**: n_clusters, init, n_init.
-    - **dbscan**: eps, min_samples, metric, algorithm, p.
-    - **hierarchical**: n_clusters, metric, linkage.
+
+      For 'decision_tree':
+         - "criterion": ("gini", "entropy", "log_loss")
+         - "max_depth": (int or null)
+         - "min_samples_split": (int or float)
+         - "min_samples_leaf": (int or float)
+         - "max_features": ("sqrt", "log2", null)
+
+      For 'knn':
+         - "n_neighbors": (int)
+         - "weights": ("uniform", "distance")
+         - "metric": ("minkowski", "euclidean", "manhattan")
+         - "p": (int, usually 1 or 2)
+
+      For 'naive_bayes':
+         - N/A
+
+      For 'kmeans':
+         - "n_clusters": (int, e.g., 3, 5, 10)
+         - "init": ("k-means++", "random")
+         - "n_init": (int or "auto")
+
+      For 'dbscan':
+      - "eps": (float, e.g., 0.5, 0.1 - distance threshold)
+      - "min_samples": (int, e.g., 5, 10)
+      - "metric": ("euclidean", "manhattan", "cosine")
+      - "algorithm": ("auto", "ball_tree", "kd_tree", "brute")
+      - "p": (float, usually null or 1, 2)
+
+      For 'hierarchical' (AgglomerativeClustering):
+      - "n_clusters": (int, e.g., 2, 3, 5)
+      - "metric": ("euclidean", "l1", "l2", "manhattan", "cosine")
+      - "linkage": ("ward", "complete", "average", "single")
+         * Note: "ward" only works with "euclidean".
+
+      For 'linear_regression':
+         - "loss": one of ["l2", "l1", "huber"]
+         - "optimizer": one of ["sgd", "adam"]
+         - "learning_rate": float (e.g., 0.001–0.1)
+         - "epochs": int (e.g., 200–2000)
+         - "batch_size": int (1 = SGD, n = full GD, or 32–128 = minibatch)
+         - "huber_delta": float (only used when loss="huber")
+         - "regularization": one of ["none", "l2", "l1"]
+         - "alpha": float (regularization strength, e.g., 0.0–0.1)
 
     ### OUTPUT FORMAT
     Return a strict JSON object with a key "refined_models".

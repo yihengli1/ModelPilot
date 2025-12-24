@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from regularizers import reg_penalty_linear
+from .regularizers import reg_penalty_linear
 
 
 class LinearRegressionTorchNN:
@@ -21,12 +21,11 @@ class LinearRegressionTorchNN:
         optimizer: str = "sgd",
         learning_rate: float = 1e-3,
         epochs: int = 500,
-        batch_size: int | None = 64,   # SGD=1, GD=n, minibatch=otehr
+        batch_size: int | None = 1,   # SGD=1, GD=n, minibatch=otehr
         huber_delta: float = 1.0,
 
         regularization: str = "none",
         alpha: float = 0.0,
-        l1_ratio: float = 0.5,
     ):
         self.loss = (loss or "l2").lower()
         self.optimizer_name = (optimizer or "sgd").lower()
@@ -38,7 +37,6 @@ class LinearRegressionTorchNN:
 
         self.regularization = (regularization or "none").lower()
         self.alpha = float(alpha)
-        self.l1_ratio = float(l1_ratio)
 
         self.coef_ = None
         self.intercept_ = 0.0
@@ -109,10 +107,9 @@ class LinearRegressionTorchNN:
                 preds = self.layer(Xb)
                 loss = self._data_loss(preds, yb)
 
-                # L1 / ElasticNet handled by explicit penalty
-                if self.regularization in ("l1", "elasticnet", "l2"):
+                if self.regularization in ("l1", "l2"):
                     loss = loss + reg_penalty_linear(
-                        self.layer, self.regularization, self.alpha, self.l1_ratio)
+                        self.layer, self.regularization, self.alpha)
 
                 if not torch.isfinite(loss):
                     raise ValueError(

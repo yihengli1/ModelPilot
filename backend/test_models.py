@@ -8,28 +8,12 @@ Quick model smoke-test runner for ModelPilot backend.
 - Prints a sorted leaderboard
 """
 
-from __future__ import annotations
-
 import argparse
 import os
-import sys
-from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, silhouette_score
-
-
-@dataclass
-class RunResult:
-    model: str
-    hyperparameters: Dict[str, Any]
-    metrics: Dict[str, Any]
-    artifact: Dict[str, Any]
-    error: Optional[str] = None
 
 
 def _repo_relative_path(rel_path):
@@ -87,10 +71,13 @@ def build_model_plans(include_clustering: bool) -> List[Dict[str, Any]]:
         "model": "linear_regression",
         "hyperparameters": {
             "loss": ["l2", "l1", "huber"],
+            "optimizer": ["sgd", "adam"],
             "learning_rate": [0.001],
             "epochs": [2000],
             "batch_size": [64],
             "huber_delta": [1.0],
+            "regularization": ["l1", "l2"],
+            "alpha": [0.3],
         },
         "reasoning": "smoke test"
     })
@@ -155,7 +142,6 @@ def main():
 
     setup_django_if_needed()
 
-    from api.modelling import model_control, serialize_artifact
     from api.pipeline import execute_training_cycle, prepare_datasets
 
     headers, dataset = load_csv(args.csv)

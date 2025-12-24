@@ -107,7 +107,7 @@ Produce results in this EXACT JSON format. Do not include markdown formatting, c
 ### CONSTRAINTS
 1. "target_column": Must be the **exact string** from the feature list. NO extra text (e.g., "g3 (primary)" is FORBIDDEN). If Unsupervised, use null.
 2. "model": Must be one of: "decision_tree", "naive_bayes", "knn", "linear_regression", "kmeans", "dbscan", "hierarchical".
-3. "train_val_test": Must be a list of floats summing to 1.0.
+3. "model": If the user mentions to use a specific model, only recommend that model
 """
 
 

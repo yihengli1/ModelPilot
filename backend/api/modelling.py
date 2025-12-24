@@ -59,7 +59,7 @@ def serialize_artifact(classifier, model, metrics):
             }
         elif model == "linear_regression":
             return {
-                "coef": (classifier.coef_.tolist() if hasattr(classifier, "coef_") and classifier.coef_ is not None else []),
+                "weight": (classifier.coef_.tolist() if hasattr(classifier, "coef_") and classifier.coef_ is not None else []),
                 "intercept": float(getattr(classifier, "intercept_", 0.0)),
                 "loss": getattr(classifier, "loss", "l2"),
             }

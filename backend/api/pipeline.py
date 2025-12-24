@@ -326,9 +326,11 @@ def training_models(model, is_supervised, problem_type, X_train, X_val, X_test, 
             loss_name = (getattr(model, "loss", "l2") or "l2").lower()
             if loss_name in ("l1"):
                 val_loss, test_loss = val_mae, test_mae
+                metrics["regression_metric"] = "MAE"
             # l2 + huber
             else:
                 val_loss, test_loss = val_mse, test_mse
+                metrics["regression_metric"] = "MSE"
 
             metrics["val_loss"] = val_loss
             metrics["test_loss"] = test_loss

@@ -2,7 +2,12 @@ import { useState, useMemo } from "react";
 import { Link, useLocation, Navigate } from "react-router-dom";
 import ResultsCard from "./ResultsCard";
 
-const formatPercent = (val) => {
+const formatPercent = (val, regression) => {
+	//Regression needed
+	if (regression) {
+		val = Math.abs(val);
+		return (val * 100).toFixed(2);
+	}
 	if (val === undefined || val === null) return "N/A";
 	return (val * 100).toFixed(2) + "%";
 };
@@ -167,21 +172,31 @@ function ResultsPage() {
 									)}
 									<div className="text-center">
 										<p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-											Validation Acc
+											{currentModel.metrics.regression_metric
+												? "Validation " + currentModel.metrics.regression_metric
+												: "Validation Acc"}
 										</p>
 										<p className="font-mono text-2xl font-bold text-emerald-600">
 											{currentSupervised
-												? formatPercent(currentModel.metrics.val_accuracy)
+												? formatPercent(
+														currentModel.metrics.val_accuracy,
+														currentModel.metrics.regression_metric
+												  )
 												: formatPercent(0)}
 										</p>
 									</div>
 									<div className="text-center">
 										<p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-											Test Acc
+											{currentModel.metrics.regression_metric
+												? "Test " + currentModel.metrics.regression_metric
+												: "Test Acc"}
 										</p>
 										<p className="font-mono text-2xl font-bold text-blue-600">
 											{currentSupervised
-												? formatPercent(currentModel.metrics.test_accuracy)
+												? formatPercent(
+														currentModel.metrics.test_accuracy,
+														currentModel.metrics.regression_metric
+												  )
 												: formatPercent(0)}
 										</p>
 									</div>

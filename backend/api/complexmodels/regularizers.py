@@ -1,42 +1,20 @@
 import torch
 
 
-class Regularizer:
-    def penalty(self):
-        return torch.tensor(0.0)
+def reg_penalty_linear(layer: torch.nn.Linear, reg: str, alpha: float, l1_ratio: float = 0.5) -> torch.Tensor:
+    # L2 is through tensor.optim (weight decay)
+    if alpha <= 0 or reg in ("none", "", None):
+        return torch.tensor(0.0, device=layer.weight.device)
 
+    reg = reg.lower()
+    w = layer.weight
+    if reg == "l1":
+        return alpha * w.abs().sum()
 
-class NoRegularization(Regularizer):
-    pass
+    if reg == "elasticnet":
+        r = min(max(l1_ratio, 0.0), 1.0)
+        l1 = w.abs().sum()
+        l2 = 0.5 * (w ** 2).sum()
+        return alpha * (r * l1 + (1 - r) * l2)
 
-
-class L2Regularization(Regularizer):
-    def __init__(self, alpha: float = 0.0, include_bias: bool = False):
-        self.alpha = float(alpha)
-        self.include_bias = include_bias
-
-    def penalty(self, params):
-        if self.alpha <= 0:
-            return torch.tensor(0.0, device=next(iter(params.values())).device)
-
-        w = params["w"]
-        p = 0.5 * self.alpha * (w ** 2).sum()
-        if self.include_bias and "b" in params and params["b"] is not None:
-            p = p + 0.5 * self.alpha * (params["b"] ** 2).sum()
-        return p
-
-
-class L1Regularization(Regularizer):
-    def __init__(self, alpha: float = 0.0, include_bias: bool = False):
-        self.alpha = float(alpha)
-        self.include_bias = include_bias
-
-    def penalty(self, params):
-        if self.alpha <= 0:
-            return torch.tensor(0.0, device=next(iter(params.values())).device)
-
-        w = params["w"]
-        p = self.alpha * w.abs().sum()
-        if self.include_bias and "b" in params and params["b"] is not None:
-            p = p + self.alpha * params["b"].abs().sum()
-        return p
+    raise ValueError(f"Unknown regularization: {reg}")

@@ -1,131 +1,156 @@
+import numpy as np
 import torch
 
 
-class LinearRegressionGD:
-    """Simple linear regression trained with (mini-)batch gradient descent.
+class LinearRegressionTorchNN:
+    """
+    Linear regression via torch.nn.Linear + torch.optim.
 
-    Supports pure loss functions (no regularization):
-    - l2: mean squared error
-    - l1: mean absolute error
-    - huber: smooth L1 with delta
+    loss: "l2"(MSE) | "l1"(MAE) | "huber"
+    optimizer: "sgd" | "adam"
+    regularization: "none" | "l2" | "l1" | "elasticnet"
+      - l2 uses optimizer weight_decay
+      - l1/elasticnet adds penalty to loss
     """
 
     def __init__(
         self,
         loss,
-        batch_size: int | None = None,
+        optimizer: str = "sgd",
+        learning_rate: float = 1e-3,
+        epochs: int = 500,
+        batch_size: int | None = 64,   # SGD=1, GD=n, minibatch=otehr
         huber_delta: float = 1.0,
         fit_intercept: bool = True,
         random_state: int = 42,
-        learning_rate: float = 0.01,
-        epochs: int = 500,
+        standardize: bool = True,
+
+        regularization: str = "none",
+        alpha: float = 0.0,
+        l1_ratio: float = 0.5,
     ):
-        self.loss = loss
+        self.loss = (loss or "l2").lower()
+        self.optimizer_name = (optimizer or "sgd").lower()
         self.learning_rate = float(learning_rate)
         self.epochs = int(epochs)
         self.batch_size = None if batch_size in (None, 0) else int(batch_size)
         self.huber_delta = float(huber_delta)
         self.fit_intercept = bool(fit_intercept)
         self.random_state = int(random_state)
+        self.standardize = bool(standardize)
 
-        # w
+        self.regularization = (regularization or "none").lower()
+        self.alpha = float(alpha)
+        self.l1_ratio = float(l1_ratio)
+
+        # sklearn-like artifacts
         self.coef_ = None
-        # b
         self.intercept_ = 0.0
 
-    def _as_torch(self, X, y=None):
-        import numpy as np
-        if isinstance(X, torch.Tensor):
-            X_t = X.detach().float()
-        else:
-            X_t = torch.tensor(np.asarray(
-                X, dtype=float), dtype=torch.float32)
+        # fitted preprocessing
+        self.x_mean_ = None
+        self.x_std_ = None
 
+        # torch module (created on fit)
+        self.layer: torch.nn.Linear | None = None
+
+    def _as_torch(self, X, y=None):
+        X_t = torch.tensor(np.asarray(X, dtype=float), dtype=torch.float32)
         if y is None:
             return X_t
-
-        if isinstance(y, torch.Tensor):
-            y_t = y.detach().float()
-        else:
-            y_t = torch.tensor(np.asarray(
-                y, dtype=float), dtype=torch.float32)
-
+        y_t = torch.tensor(np.asarray(y, dtype=float), dtype=torch.float32)
         if y_t.ndim == 1:
             y_t = y_t.unsqueeze(1)
         return X_t, y_t
 
-    def _loss_fn(self, preds: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    def _data_loss(self, preds: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         diff = preds - y
-        if self.loss in ("l2", "mse", "squared", "squared_error"):
+        if self.loss in ("l2", "mse"):
             return (diff ** 2).mean()
-        if self.loss in ("l1", "mae", "absolute"):
+        if self.loss in ("l1", "mae"):
             return diff.abs().mean()
         if self.loss in ("huber", "smooth_l1"):
             d = self.huber_delta
-            abs_diff = diff.abs()
-            quad = torch.minimum(
-                abs_diff, torch.tensor(d, device=diff.device))
-            lin = abs_diff - quad
-            return (0.5 * quad ** 2 + d * lin).mean()
-        raise ValueError("Loss function not supported: ", self.loss)
+            ad = diff.abs()
+            q = torch.minimum(ad, torch.tensor(d, device=diff.device))
+            lin = ad - q
+            return (0.5 * q**2 + d * lin).mean()
+        raise ValueError(f"Unsupported loss: {self.loss}")
 
     def fit(self, X, y):
-
         torch.manual_seed(self.random_state)
+
         X_t, y_t = self._as_torch(X, y)
         n, d = X_t.shape
 
-        # standardize
-        self.x_mean_ = X_t.mean(dim=0, keepdim=True)
-        self.x_std_ = X_t.std(dim=0, keepdim=True)
-        self.x_std_[self.x_std_ == 0] = 1.0
-        X_t = (X_t - self.x_mean_) / self.x_std_
+        if not torch.isfinite(X_t).all() or not torch.isfinite(y_t).all():
+            raise ValueError("X or y contains NaN/Inf.")
 
-        w = torch.zeros((d, 1), dtype=torch.float32,
-                        requires_grad=True)
-        b = torch.zeros((1,), dtype=torch.float32,
-                        requires_grad=True) if self.fit_intercept else None
+        # standardize features
+        if self.standardize:
+            self.x_mean_ = X_t.mean(dim=0, keepdim=True)
+            self.x_std_ = X_t.std(dim=0, keepdim=True)
+            self.x_std_[self.x_std_ == 0] = 1.0
+            X_t = (X_t - self.x_mean_) / self.x_std_
 
-        bs = self.batch_size or n
-        lr = self.learning_rate
+        # nn.Linear
+        self.layer = torch.nn.Linear(d, 1, bias=self.fit_intercept)
 
+        # L2 regularization = weight_decay (only reliable for L2)
+        weight_decay = self.alpha if self.regularization == "l2" else 0.0
+
+        if self.optimizer_name == "sgd":
+            opt = torch.optim.SGD(self.layer.parameters(
+            ), lr=self.learning_rate, weight_decay=weight_decay)
+        elif self.optimizer_name == "adam":
+            opt = torch.optim.Adam(self.layer.parameters(
+            ), lr=self.learning_rate, weight_decay=weight_decay)
+        else:
+            raise ValueError(f"Unsupported optimizer: {self.optimizer_name}")
+
+        bs = self.batch_size or n  # None -> full batch GD
         for _ in range(max(self.epochs, 1)):
             perm = torch.randperm(n)
             for i in range(0, n, bs):
-                idx = perm[i:i+bs]
+                idx = perm[i:i + bs]
                 Xb = X_t[idx]
                 yb = y_t[idx]
 
-                preds = Xb @ w
-                if b is not None:
-                    preds = preds + b
+                preds = self.layer(Xb)
+                loss = self._data_loss(preds, yb)
 
-                loss = self._loss_fn(preds, yb)
-                loss.backward()
+                # L1 / ElasticNet handled by explicit penalty
+                if self.regularization in ("l1", "elasticnet"):
+                    loss = loss + \
+                        reg_penalty_linear(
+                            self.layer, self.regularization, self.alpha, self.l1_ratio)
 
                 if not torch.isfinite(loss):
                     raise ValueError(
-                        "Diverged: loss became NaN/Inf. Try scaling X or smaller learning_rate.")
+                        "Diverged: loss became NaN/Inf. Try scaling or smaller learning_rate.")
 
-                # untrack
-                with torch.no_grad():
-                    w -= lr * w.grad
-                    w.grad.zero_()
-                    if b is not None:
-                        b -= lr * b.grad
-                        b.grad.zero_()
+                opt.zero_grad(set_to_none=True)
+                loss.backward()
+                opt.step()
 
-            self.coef_ = w.detach().cpu().numpy().reshape(-1)
-            self.intercept_ = float(b.detach().cpu().numpy()[
-                                    0]) if b is not None else 0.0
+        # export sklearn-like fields
+        w = self.layer.weight.detach().cpu().numpy().reshape(-1)
+        self.coef_ = w
+        if self.fit_intercept and self.layer.bias is not None:
+            self.intercept_ = float(self.layer.bias.detach().cpu().numpy()[0])
+        else:
+            self.intercept_ = 0.0
+
         return self
 
     def predict(self, X):
+        if self.layer is None:
+            raise ValueError("Model is not fit yet.")
+
         X_t = self._as_torch(X)
-        if hasattr(self, "x_mean_") and hasattr(self, "x_std_"):
+        if self.standardize and self.x_mean_ is not None:
             X_t = (X_t - self.x_mean_) / self.x_std_
-        w = torch.tensor(self.coef_, dtype=torch.float32).unsqueeze(1)
-        preds = X_t @ w
-        if self.fit_intercept:
-            preds = preds + float(self.intercept_)
-        return preds.detach().cpu().numpy().reshape(-1)
+
+        with torch.no_grad():
+            preds = self.layer(X_t).detach().cpu().numpy().reshape(-1)
+        return preds

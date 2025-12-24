@@ -1,4 +1,4 @@
-from .complexmodels.LinearRegression import LinearRegressionGD
+from .complexmodels.linear_regression import LinearRegressionGD
 
 
 def model_control(model_type, single_param_set):

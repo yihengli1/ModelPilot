@@ -35,12 +35,22 @@ Frontend (Vite + React):
 
 ### Supported Models
 
-The system currently supports the following algorithms via scikit-learn:
+The system currently supports the following algorithms via scikit-learn + PyTorch:
 
 - Decision Trees: Classification trees with tunable depth and splitting criteria.
 - Naive Bayes: Gaussian Naive Bayes for probabilistic classification.
 - k-Nearest Neighbors (kNN): Distance-based classification with configurable metrics and weights.
 - K-Means Clustering: Unsupervised clustering with silhouette score evaluation.
+- DBSCAN: Unsupervised clustering with silhouette score evaluation.
+- Hierarchical Clustering: Unsupervised clustering with silhouette score evaluation.
+- Linear Regression (L1/L2 Regularization):
+
+### Supported Optimizers
+
+- Gradient Descent: Set Batch size to n
+- Mini-Batch Gradient Descent: Set Batch size from 32-128
+- Stochastic Gradient Descent: Set Batch size to 1
+- Adam (Adaptive Moment Estimation): Efficiently adjusts step sizes for each parameter based on past gradients' first (momentum) and second (variance) moments
 
 ## Roadmap
 
@@ -52,8 +62,7 @@ The system currently supports the following algorithms via scikit-learn:
 
 ### Expanded Model Library
 
-- Clustering: DBSCAN, Hierarchical Clustering, and Ensemble Clustering.
-- Regression: Linear Regression (L1/L2 Regularization), Non-linear Kernel Regression.
+- Regression: Non-linear Kernel Regression.
 - Classifiers: Linear Classifiers (SVM, Logistic Regression, Hinge Loss) and Multi-class SVMs/Softmax.
 - Ensemble Methods: Random Forests and Gradient Boosted Trees (XGBoost).
 - Dimensionality Reduction: PCA, MDS (ISOMAP, Sammon's Map).
@@ -61,6 +70,21 @@ The system currently supports the following algorithms via scikit-learn:
 
 ### Optimization & Visualization
 
-- Solvers: Gradient Descent, Stochastic Gradient Descent (SGD), and SVD.
 - Feature Selection: Forward Selection and Score-based search methods.
 - Educational Visualization: Automated plotting of objective functions and gradients for 2D datasets using automatic differentiation.
+- Leaderboards for who can prompt the best for a given dataset every week/month
+
+## Testing / Example Data
+
+To quickly generate sample datasets (and seed example data for development/testing), run the dataset seeding script from the backend.
+
+`cd backend`
+`source .venv/bin/activate`
+`python manage.py migrate`
+`python seed_datasets.py`
+
+What this does:
+
+Generates example datasets you can use to test the pipeline end-to-end.
+
+Helps create consistent, reproducible example data for development (exact outputs depend on the script implementation—check seed_datasets.py for paths and options).

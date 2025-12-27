@@ -211,7 +211,7 @@ def main():
         model_plans, args.problem_type
     )
 
-    print(results)
+    # print(results)
 
     print_leaderboard(results, top_k=10)
 

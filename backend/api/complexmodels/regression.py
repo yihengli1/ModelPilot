@@ -104,8 +104,17 @@ class LinearRegressionTorchNN:
             raise ValueError(f"Unsupported optimizer: {self.optimizer_name}")
 
         bs = self.batch_size or n
+
+        # Early stopping
+        best = float("inf")
+        patience = 10
+        tol = 1e-5
+        stale = 0
+
         for _ in range(max(self.epochs, 1)):
             perm = torch.randperm(n)
+            epoch_loss = 0.0
+            steps = 0
             for i in range(0, n, bs):
                 idx = perm[i:i + bs]
                 Xb = X_t[idx]
@@ -125,6 +134,19 @@ class LinearRegressionTorchNN:
                 opt.zero_grad(set_to_none=True)
                 loss.backward()
                 opt.step()
+
+                opt.zero_grad(set_to_none=True)
+                loss.backward()
+                opt.step()
+
+            epoch_loss /= max(steps, 1)
+            if epoch_loss < best - tol:
+                best = epoch_loss
+                stale = 0
+            else:
+                stale += 1
+                if stale >= patience:
+                    break
 
         w = self.layer.weight.detach().cpu().numpy().reshape(-1)
         self.coef_ = w

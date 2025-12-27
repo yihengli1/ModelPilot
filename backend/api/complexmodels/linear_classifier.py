@@ -105,9 +105,22 @@ class LinearClassifierTorchNN:
 
         y_idx_t = torch.tensor(y_idx, dtype=torch.long)
 
+        # Early stopping
+        best = float("inf")
+        patience = 10
+        tol = 1e-5
+        stale = 0
+
         for _ in range(max(self.epochs, 1)):
             perm = torch.randperm(n)
+
+            epoch_loss = 0.0
+            steps = 0
+
             for i in range(0, n, bs):
+                epoch_loss = 0.0
+                steps = 0
+
                 idx = perm[i:i + bs]
                 Xb = Xs[idx]
                 logits = self.layer(Xb)
@@ -140,9 +153,21 @@ class LinearClassifierTorchNN:
                     raise ValueError(
                         "Diverged: loss became NaN/Inf. Try smaller learning_rate.")
 
+                epoch_loss += float(loss.detach().cpu().item())
+                steps += 1
+
                 opt.zero_grad(set_to_none=True)
                 loss.backward()
                 opt.step()
+
+            epoch_loss /= max(steps, 1)
+            if epoch_loss < best - tol:
+                best = epoch_loss
+                stale = 0
+            else:
+                stale += 1
+                if stale >= patience:
+                    break
 
         # export params
         w = self.layer.weight.detach().cpu().numpy()

@@ -10,9 +10,7 @@ class LinearRegressionTorchNN:
 
     loss: "l2"(MSE) | "l1"(MAE) | "huber"
     optimizer: "sgd" | "adam"
-    regularization: "none" | "l2" | "l1" | "elasticnet"
-      - l2 uses optimizer weight_decay
-      - l1/elasticnet adds penalty to loss
+    regularization: "none" | "l2" | "l1"
     """
 
     def __init__(
@@ -21,7 +19,7 @@ class LinearRegressionTorchNN:
         optimizer: str = "sgd",
         learning_rate: float = 1e-3,
         epochs: int = 500,
-        batch_size: int | None = 1,   # SGD=1, GD=n, minibatch=otehr
+        batch_size: int | None = 1,   # SGD=1, GD=n, minibatch=oteher
         huber_delta: float = 1.0,
 
         regularization: str = "none",

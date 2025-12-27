@@ -17,6 +17,7 @@ Recommend 1-3 appropriate model architectures from this allowed list ONLY:
    - "knn"
    - "linear_regression"
    - "kernel_polynomial"
+   - "logistic_regression"
    - "kmeans" (Unsupervised)
    - "dbscan" (Unsupervised)
    - "hierarchical" (Unsupervised)
@@ -68,19 +69,29 @@ For 'hierarchical' (AgglomerativeClustering):
   - "linkage": ("ward", "complete", "average", "single")
      * Note: "ward" only works with "euclidean".
 
-For 'linear_regression':
-   - "loss": one of ["l2", "l1", "huber"]
-   - "optimizer": one of ["sgd", "adam"]
-   - "learning_rate": float (e.g., 0.001–0.1)
-   - "epochs": int (e.g., 200–2000)
-   - "batch_size": int (1 = SGD, n = full GD, or 32–128 = minibatch)
-   - "huber_delta": float (only used when loss="huber")
-   - "regularization": one of ["none", "l2", "l1"]
-   - "alpha": float (regularization strength, e.g., 0.0–0.1)
-
 For 'kernel_polynomial':
    - "degree": int (e.g., 2–5)
    - "lam": float (ridge strength, e.g., 1e-6–1.0)
+
+#### Common hyperparameters for all Torch linear models
+Applies to:
+- "linear_regression"
+- "logistic_regression"
+- "linear_svm" (hinge)
+
+Allowed keys:
+- "optimizer": one of ["sgd", "adam"]
+- "learning_rate": float (e.g., 0.001–0.1)
+- "epochs": int (e.g., 200–2000)
+- "batch_size": int (1 = SGD, n = full GD, or 32–128 = minibatch)
+- "regularization": one of ["none", "l2", "l1"]
+- "alpha": float (regularization strength, e.g., 0.0–0.1)
+
+#### Model-specific additions
+
+For "linear_regression" (Torch):
+- "loss": one of ["l2", "l1", "huber"]
+
 
 
 DO NOT generate parameters outside this list (e.g., do not use 'learning_rate' or 'n_estimators').

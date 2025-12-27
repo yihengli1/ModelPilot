@@ -20,7 +20,6 @@ class LinearRegressionTorchNN:
         learning_rate: float = 1e-3,
         epochs: int = 500,
         batch_size: int | None = 1,   # SGD=1, GD=n, minibatch=oteher
-        huber_delta: float = 1.0,
 
         regularization: str = "none",
         alpha: float = 0.0,
@@ -30,11 +29,12 @@ class LinearRegressionTorchNN:
         self.learning_rate = float(learning_rate)
         self.epochs = int(epochs)
         self.batch_size = None if batch_size in (None, 0) else int(batch_size)
-        self.huber_delta = float(huber_delta)
+
         self.random_state = 42  # Change for debugging
 
         self.regularization = (regularization or "none").lower()
         self.alpha = float(alpha)
+        self.huber_delta = None
 
         self.coef_ = None
         self.intercept_ = 0.0
@@ -60,18 +60,27 @@ class LinearRegressionTorchNN:
         if self.loss in ("l1"):
             return diff.abs().mean()
         if self.loss in ("huber"):
-            d = self.huber_delta
+            d = (self.huber_delta if self.huber_delta is not None else 1.0)
             ad = diff.abs()
             q = torch.minimum(ad, torch.tensor(d, device=diff.device))
             lin = ad - q
             return (0.5 * q**2 + d * lin).mean()
         raise ValueError(f"Unsupported loss: {self.loss}")
 
+    def huber_delta(self, y_t):
+        if self.loss == "huber":
+            y_flat = y_t.detach().view(-1)
+            med = y_flat.median()
+            mad = (y_flat - med).abs().median()
+            self.huber_delta = float(torch.clamp(1.995 * mad, min=1e-6).item())
+
     def fit(self, X, y):
         torch.manual_seed(self.random_state)
 
         X_t, y_t = self._as_torch(X, y)
         n, d = X_t.shape
+
+        self.huber_delta(y_t)
 
         if not torch.isfinite(X_t).all() or not torch.isfinite(y_t).all():
             raise ValueError("X or y contains NaN/Inf.")
@@ -133,3 +142,74 @@ class LinearRegressionTorchNN:
         with torch.no_grad():
             preds = self.layer(X_t).detach().cpu().numpy().reshape(-1)
         return preds
+
+
+class KernelPolynomialTorch:
+    def __init__(self, degree=3, lam=1e-3, dtype=torch.float32):
+        self.degree = int(degree)
+        self.lam = float(lam)
+        self.dtype = dtype
+
+        self.x_mean_ = None
+        self.x_std_ = None
+        self.X_train_ = None
+        self.alpha_ = None
+
+    def _as_torch(self, X, y=None):
+        X_t = torch.tensor(np.asarray(X, dtype=float), dtype=self.dtype)
+        if y is None:
+            return X_t
+        y_t = torch.tensor(np.asarray(y, dtype=float),
+                           dtype=self.dtype).reshape(-1, 1)
+        return X_t, y_t
+
+    def _standardize_fit(self, X):
+        self.x_mean_ = X.mean(dim=0, keepdim=True)
+        self.x_std_ = X.std(dim=0, keepdim=True)
+        self.x_std_[self.x_std_ == 0] = 1.0
+        return (X - self.x_mean_) / self.x_std_
+
+    def _standardize_apply(self, X):
+        return (X - self.x_mean_) / self.x_std_
+
+    def _poly_kernel(self, A, B):
+        return ((A @ B.T) + 1) ** self.degree
+
+    def fit(self, X, y):
+        X_t, y_t = self._as_torch(X, y)
+        n, d = X_t.shape
+
+        if not torch.isfinite(X_t).all() or not torch.isfinite(y_t).all():
+            raise ValueError("X or y contains NaN/Inf.")
+        if self.lam < 0:
+            raise ValueError("lam must be >= 0.")
+
+        Xs = self._standardize_fit(X_t)
+        K = self._poly_kernel(Xs, Xs)
+
+        A = K + self.lam * torch.eye(n, dtype=K.dtype, device=K.device)
+
+        # solve (K + lam I) alpha = y
+        try:
+            alpha = torch.linalg.solve(A, y_t)
+        except RuntimeError:
+            jitter = 1e-10
+            alpha = torch.linalg.solve(
+                A + jitter * torch.eye(n, dtype=K.dtype, device=K.device), y_t)
+
+        self.X_train_ = Xs
+        self.alpha_ = alpha
+        return self
+
+    def predict(self, X):
+        if self.alpha_ is None or self.X_train_ is None:
+            raise ValueError("Model is not fit yet.")
+
+        X_t = self._as_torch(X)
+        if not torch.isfinite(X_t).all():
+            raise ValueError("X contains NaN/Inf.")
+
+        Xs = self._standardize_apply(X_t)
+        K_test = self._poly_kernel(Xs, self.X_train_)  # (n_test, n_train)
+        yhat = K_test @ self.alpha_  # (n_test, 1)
+        return yhat.detach().cpu().numpy().reshape(-1)

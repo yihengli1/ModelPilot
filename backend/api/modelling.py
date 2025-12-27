@@ -1,5 +1,4 @@
-from .complexmodels.linear_regression import LinearRegressionTorchNN
-from .complexmodels.kernel_polynomial import KernelPolynomialTorch
+from .complexmodels.regression import LinearRegressionTorchNN, KernelPolynomialTorch
 
 
 def model_control(model_type, single_param_set):

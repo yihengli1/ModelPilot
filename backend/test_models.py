@@ -82,6 +82,15 @@ def build_model_plans(include_clustering: bool) -> List[Dict[str, Any]]:
         "reasoning": "smoke test"
     })
 
+    plans.append({
+        "model": "kernel_polynomial",
+        "hyperparameters": {
+            "degree": [2, 3],
+            "lam": [1e-3, 1],
+        },
+        "reasoning": "smoke test"
+    })
+
     if include_clustering:
         plans.append({
             "model": "kmeans",
@@ -171,7 +180,9 @@ def main():
                        in ("naive_bayes", "decision_tree", "knn")]
     elif args.problem_type == "regression":
         model_plans = [p for p in model_plans if p["model"]
-                       in ("linear_regression",)]
+                       in (
+            #    "linear_regression",
+                           "kernel_polynomial")]
     elif args.problem_type == "clustering":
         model_plans = [p for p in model_plans if p["model"]
                        in ("kmeans", "dbscan", "hierarchical")]

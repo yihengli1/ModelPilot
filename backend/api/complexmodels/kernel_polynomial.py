@@ -3,18 +3,8 @@ import torch
 
 
 class KernelPolynomialTorch:
-    """
-    Kernel Ridge Regression with polynomial kernel:
-        K(x,z) = (gamma * x^T z + coef0) ^ degree
-
-    For small n, we do a closed-form solve:
-        (K + lam I) alpha = y
-    """
-
-    def __init__(self, degree=3, gamma=None, coef0=1.0, lam=1e-3, dtype=torch.float32):
+    def __init__(self, degree=3, lam=1e-3, dtype=torch.float32):
         self.degree = int(degree)
-        self.gamma = gamma  # None => 1/d
-        self.coef0 = float(coef0)
         self.lam = float(lam)
         self.dtype = dtype
 
@@ -41,9 +31,7 @@ class KernelPolynomialTorch:
         return (X - self.x_mean_) / self.x_std_
 
     def _poly_kernel(self, A, B):
-        d = A.shape[1]
-        gamma = (1.0 / d) if self.gamma is None else float(self.gamma)
-        return (gamma * (A @ B.T) + self.coef0) ** self.degree
+        return ((A @ B.T) + 1) ** self.degree
 
     def fit(self, X, y):
         X_t, y_t = self._as_torch(X, y)
@@ -55,13 +43,13 @@ class KernelPolynomialTorch:
             raise ValueError("lam must be >= 0.")
 
         Xs = self._standardize_fit(X_t)
-        K = self._poly_kernel(Xs, Xs)  # (n, n)
+        K = self._poly_kernel(Xs, Xs)
 
         A = K + self.lam * torch.eye(n, dtype=K.dtype, device=K.device)
 
         # solve (K + lam I) alpha = y
         try:
-            alpha = torch.linalg.solve(A, y_t)  # (n, 1)
+            alpha = torch.linalg.solve(A, y_t)
         except RuntimeError:
             jitter = 1e-10
             alpha = torch.linalg.solve(

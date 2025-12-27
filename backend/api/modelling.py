@@ -1,4 +1,5 @@
 from .complexmodels.linear_regression import LinearRegressionTorchNN
+from .complexmodels.kernel_polynomial import KernelPolynomialTorch
 
 
 def model_control(model_type, single_param_set):
@@ -20,6 +21,9 @@ def model_control(model_type, single_param_set):
         is_supervised = True
     elif model_type == "linear_regression":
         model_type = LinearRegressionTorchNN(**single_param_set)
+        is_supervised = True
+    elif model_type == "kernel_polynomial":
+        model_type = KernelPolynomialTorch(**single_param_set)
         is_supervised = True
     elif model_type == "kmeans":
         model_type = KMeans(**single_param_set, random_state=42)
@@ -62,6 +66,11 @@ def serialize_artifact(classifier, model, metrics):
                 "weight": (classifier.coef_.tolist() if hasattr(classifier, "coef_") and classifier.coef_ is not None else []),
                 "intercept": float(getattr(classifier, "intercept_", 0.0)),
                 "loss": getattr(classifier, "loss", "l2"),
+            }
+        elif model == "kernel_polynomial":
+            return {
+                "degree": int(getattr(classifier, "degree")),
+                "lam": float(getattr(classifier, "lam")),
             }
         elif model == "kmeans":
             return {

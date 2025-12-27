@@ -16,6 +16,7 @@ Recommend 1-3 appropriate model architectures from this allowed list ONLY:
    - "naive_bayes"
    - "knn"
    - "linear_regression"
+   - "kernel_polynomial"
    - "kmeans" (Unsupervised)
    - "dbscan" (Unsupervised)
    - "hierarchical" (Unsupervised)
@@ -77,6 +78,10 @@ For 'linear_regression':
    - "regularization": one of ["none", "l2", "l1"]
    - "alpha": float (regularization strength, e.g., 0.0–0.1)
 
+For 'kernel_polynomial':
+   - "degree": int (e.g., 2–5)
+   - "lam": float (ridge strength, e.g., 1e-6–1.0)
+
 
 DO NOT generate parameters outside this list (e.g., do not use 'learning_rate' or 'n_estimators').
 
@@ -110,8 +115,7 @@ Produce results in this EXACT JSON format. Do not include markdown formatting, c
 
 ### CONSTRAINTS
 1. "target_column": Must be the **exact string** from the feature list. NO extra text (e.g., "g3 (primary)" is FORBIDDEN). If Unsupervised, use null.
-2. "model": Must be one of: "decision_tree", "naive_bayes", "knn", "linear_regression", "kmeans", "dbscan", "hierarchical".
-3. "model": If the user mentions to use a specific model, only recommend that model
+2. "model": If the user mentions to use a specific model, only recommend that model
 """
 
 
@@ -144,7 +148,6 @@ REFINEMENT_CONTEXT = """
     To prevent timeouts, observe these limits:
     - **Max 3 values per parameter** (e.g., `[0.1, 0.5, 1.0]`).
     - **Max 3 parameters tuned per model**.
-    - This ensures we generate ~27 candidates per model, not hundreds.
 
     ### ALLOWED MODELS & PARAMS
 
@@ -191,6 +194,10 @@ REFINEMENT_CONTEXT = """
          - "huber_delta": float (only used when loss="huber")
          - "regularization": one of ["none", "l2", "l1"]
          - "alpha": float (regularization strength, e.g., 0.0–0.1)
+
+      For 'kernel_polynomial':
+         - "degree": int (e.g., 2–5)
+         - "lam": float (ridge strength, e.g., 1e-6–1.0)
 
     ### OUTPUT FORMAT
     Return a strict JSON object with a key "refined_models".

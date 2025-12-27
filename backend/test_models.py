@@ -75,7 +75,6 @@ def build_model_plans(include_clustering: bool) -> List[Dict[str, Any]]:
             "learning_rate": [0.001],
             "epochs": [2000],
             "batch_size": [64],
-            "huber_delta": [1.0],
             "regularization": ["l1", "l2"],
             "alpha": [0.3],
         },
@@ -200,7 +199,7 @@ def main():
         model_plans = [p for p in model_plans if p["model"]
                        in (
             "linear_regression",
-            "kernel_polynomial",
+            # "kernel_polynomial",
         )]
     elif args.problem_type == "clustering":
         model_plans = [p for p in model_plans if p["model"]

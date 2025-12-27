@@ -67,7 +67,7 @@ class LinearRegressionTorchNN:
             return (0.5 * q**2 + d * lin).mean()
         raise ValueError(f"Unsupported loss: {self.loss}")
 
-    def huber_delta(self, y_t):
+    def set_huber_delta(self, y_t):
         if self.loss == "huber":
             y_flat = y_t.detach().view(-1)
             med = y_flat.median()
@@ -80,7 +80,7 @@ class LinearRegressionTorchNN:
         X_t, y_t = self._as_torch(X, y)
         n, d = X_t.shape
 
-        self.huber_delta(y_t)
+        self.set_huber_delta(y_t)
 
         if not torch.isfinite(X_t).all() or not torch.isfinite(y_t).all():
             raise ValueError("X or y contains NaN/Inf.")
@@ -131,9 +131,8 @@ class LinearRegressionTorchNN:
                     raise ValueError(
                         "Diverged: loss became NaN/Inf. Try scaling or smaller learning_rate.")
 
-                opt.zero_grad(set_to_none=True)
-                loss.backward()
-                opt.step()
+                epoch_loss += float(loss.detach().cpu().item())
+                steps += 1
 
                 opt.zero_grad(set_to_none=True)
                 loss.backward()

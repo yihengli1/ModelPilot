@@ -28,8 +28,8 @@ Infer the best choice based on:
 - Missing value patterns
 - If target_column is null/None -> Use Unsupervised model.
 - If target_column is present -> Use decision_tree, naive_bayes, or knn.
-- If "problem_type" is "regression", prefer "linear_regression".
-- If "problem_type" is "classification", choose from "decision_tree", "naive_bayes", "knn".
+- If "problem_type" is "regression", choose from "linear_regression", kernel_polynomial".
+- If "problem_type" is "classification", choose from "decision_tree", "naive_bayes", "knn", "linear_classifier".
 - If "problem_type" is "clustering", choose from "kmeans", "dbscan", "hierarchical".
 
 ### 3. Hyperparameter Proposal

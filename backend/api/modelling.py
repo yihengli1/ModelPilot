@@ -1,4 +1,5 @@
 from .complexmodels.regression import LinearRegressionTorchNN, KernelPolynomialTorch
+from .complexmodels.linear_classifier import LinearClassifierTorchNN
 
 
 def model_control(model_type, single_param_set):
@@ -17,6 +18,9 @@ def model_control(model_type, single_param_set):
         is_supervised = True
     elif model_type == "knn":
         model_type = KNeighborsClassifier(**single_param_set)
+        is_supervised = True
+    elif model_type == "linear_classifier":
+        model_type = LinearClassifierTorchNN(**single_param_set)
         is_supervised = True
     elif model_type == "linear_regression":
         model_type = LinearRegressionTorchNN(**single_param_set)
@@ -64,7 +68,14 @@ def serialize_artifact(classifier, model, metrics):
             return {
                 "weight": (classifier.coef_.tolist() if hasattr(classifier, "coef_") and classifier.coef_ is not None else []),
                 "intercept": float(getattr(classifier, "intercept_", 0.0)),
-                "loss": getattr(classifier, "loss", "l2"),
+                "loss": getattr(classifier, "loss"),
+            }
+        elif model == "linear_classifier":
+            return {
+                "classes": getattr(classifier, "classes_", None).tolist(),
+                "weight": (classifier.coef_.tolist() if hasattr(classifier, "coef_") and classifier.coef_ is not None else []),
+                "intercept": float(getattr(classifier, "intercept_", 0.0)),
+                "loss": getattr(classifier, "loss"),
             }
         elif model == "kernel_polynomial":
             return {

@@ -21,8 +21,8 @@ class LinearClassifierTorchNN:
         loss,
         optimizer: str = "sgd",
         learning_rate: float = 1e-3,
-        epochs: int = 500,
-        batch_size: int | None = 1,   # SGD=1, GD=n, minibatch=oteher
+        epochs: int = 200,
+        batch_size: int | None = None,   # SGD=1, GD=n, minibatch=oteher
 
         regularization: str = "none",
         alpha: float = 0.0,
@@ -46,11 +46,12 @@ class LinearClassifierTorchNN:
 
         self.layer: torch.nn.Linear | None = None
 
+        self._n_classes = None
+
         # ARTIFCATS
         self.classes_ = None
         self.coef_ = None
         self.intercept_ = None
-        self._n_classes = None
 
     def _as_torch(self, X):
         return torch.tensor(np.asarray(X, dtype=float), dtype=torch.float32)
@@ -84,7 +85,11 @@ class LinearClassifierTorchNN:
         self.x_std_[self.x_std_ == 0] = 1.0
         Xs = (X_t - self.x_mean_) / self.x_std_
 
-        out_dim = 1 if self._n_classes == 2 else self._n_classes
+        if self.loss == "hinge":
+            out_dim = 1
+        else:
+            out_dim = 1 if self._n_classes == 2 else self._n_classes
+
         self.layer = torch.nn.Linear(d, out_dim, bias=True)
 
         if self.optimizer_name == "sgd":
@@ -149,7 +154,6 @@ class LinearClassifierTorchNN:
         else:
             self.coef_ = w
             self.intercept_ = b
-
         return self
 
     def decision_function(self, X):

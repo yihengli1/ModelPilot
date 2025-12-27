@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { Link, useLocation, Navigate } from "react-router-dom";
 import ResultsCard from "./ResultsCard";
+import PythonSnippet from "./PythonSnippet";
 
 const formatPercent = (val, regression) => {
 	//Regression needed
@@ -245,55 +246,29 @@ function ResultsPage() {
 													Array.isArray(v) && (v.length > 5 || v[0].length > 5);
 
 												return (
-													<li
-														key={k}
-														className={`flex justify-between gap-4 ${
-															isLarge ? "items-start" : "items-center"
-														}`}
-													>
-														<span className="text-slate-600 font-medium shrink-0">
-															{formatKey(k)}
-														</span>
-														<span
-															className={`font-mono text-slate-800 ${
-																isLarge
-																	? "max-h-[5rem] overflow-y-auto w-2/3 text-right break-words bg-slate-50 p-2 rounded border border-slate-100 text-xs"
-																	: ""
+													<>
+														<li
+															key={k}
+															className={`flex justify-between gap-4 ${
+																isLarge ? "items-start" : "items-center"
 															}`}
 														>
-															{formatRecursive(v)}
-														</span>
-													</li>
+															<span className="text-slate-600 font-medium shrink-0">
+																{formatKey(k)}
+															</span>
+															<span
+																className={`font-mono text-slate-800 ${
+																	isLarge
+																		? "max-h-[5rem] overflow-y-auto w-2/3 text-right break-words bg-slate-50 p-2 rounded border border-slate-100 text-xs"
+																		: ""
+																}`}
+															>
+																{formatRecursive(v)}
+															</span>
+														</li>
+													</>
 												);
 											})}
-											{/* {Object.entries(currentModel.artifact).map(([k, v]) => {
-												if (Array.isArray(v) && v.length > 5) return null; // Hide huge arrays
-												return (
-													<li
-														key={k}
-														className="flex justify-between items-center"
-													>
-														<span className="text-slate-600 font-medium">
-															{formatKey(k)}
-														</span>
-														<span className="font-mono text-slate-800">
-															{formatRecursive(v)}
-														</span>
-													</li>
-												);
-											})}
-											{currentModel.artifact.classes &&
-												currentModel.artifact.classes.length > 5 && (
-													<li className="flex justify-between items-center">
-														<span className="text-slate-600 font-medium">
-															Classes
-														</span>
-														<span className="font-mono text-slate-800">
-															{currentModel.artifact.classes.length} unique
-															labels
-														</span>
-													</li>
-												)} */}
 										</ul>
 									) : (
 										<p className="text-sm text-slate-500 italic">
@@ -309,6 +284,7 @@ function ResultsPage() {
 									{currentModel.error}
 								</div>
 							)}
+							<PythonSnippet currentModel={currentModel} />
 						</div>
 
 						{totalModels > 1 ? (

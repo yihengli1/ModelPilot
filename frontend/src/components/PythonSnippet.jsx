@@ -50,25 +50,21 @@ const buildPythonSnippet = (modelName, params, targetColumn = null) => {
 			supervised: false,
 		},
 		linear_regression: {
-			import:
-				"from yourpkg.complexmodels.linear_regression import LinearRegressionTorchNN",
-			cls: "LinearRegressionTorchNN",
+			import: "",
+			cls: "",
 			extra: "",
 			supervised: true,
 			custom: true,
 		},
 		kernel_polynomial: {
-			import:
-				"from yourpkg.complexmodels.kernel_polynomial import KernelPolynomialTorch",
-			cls: "KernelPolynomialTorch",
+			import: "",
 			extra: "",
 			supervised: true,
 			custom: true,
 		},
 		linear_classifier: {
-			import:
-				"from yourpkg.complexmodels.linear_classifier import LinearClassifierTorchNN",
-			cls: "LinearClassifierTorchNN",
+			import: "",
+			cls: "",
 			extra: "",
 			supervised: true,
 			custom: true,
@@ -107,7 +103,6 @@ preds = model.predict(X)`
 
 	return `import pandas as pd
 import numpy as np
-
 ${info.import}
 
 # 1) Load CSV

@@ -1,6 +1,18 @@
 from .complexmodels.regression import LinearRegressionTorchNN, KernelPolynomialTorch
 from .complexmodels.linear_classifier import LinearClassifierTorchNN
 
+MODEL_TASK = {
+    "linear_regression": "regression",
+    "kernel_polynomial": "regression",
+    "linear_classifier": "classification",
+    "decision_tree": "classification",
+    "naive_bayes": "classification",
+    "knn": "classification",
+    "kmeans": "clustering",
+    "dbscan": "clustering",
+    "hierarchical": "clustering",
+}
+
 
 def model_control(model_type, single_param_set):
     from sklearn.neighbors import KNeighborsClassifier

@@ -4,12 +4,14 @@ import ResultsCard from "./ResultsCard";
 import PythonSnippet from "./PythonSnippet";
 
 const formatPercent = (val, regression) => {
+	if (val === undefined || val === null || val === 0) return "N/A";
+
 	//Regression needed
 	if (regression) {
 		val = Math.abs(val);
 		return (val * 100).toFixed(2);
 	}
-	if (val === undefined || val === null) return "N/A";
+
 	return (val * 100).toFixed(2) + "%";
 };
 

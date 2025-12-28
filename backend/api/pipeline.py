@@ -8,7 +8,7 @@ from rest_framework.response import Response
 import torch
 
 from .services import generate_plan_gpt, generate_target_gpt, summarize_and_select_features, generate_refined_plan_gpt
-from .modelling import model_control, serialize_artifact
+from .modelling import model_control, serialize_artifact, MODEL_TASK
 
 
 def _select_target_index(target_column: Any, headers: Optional[List[str]] = None) -> int:
@@ -162,7 +162,7 @@ def _select_top_models(results: List[Dict[str, Any]], top_k: int = 3) -> List[Di
     valid_results = [r for r in results if not r.get("error")]
     sorted_results = sorted(
         valid_results,
-        key=lambda x: x["metrics"].get("val_accuracy", 0.0),
+        key=lambda x: x["metrics"].get("val_score", 0.0),
         reverse=True
     )
     return sorted_results[:top_k]
@@ -173,6 +173,11 @@ def refineModel(refined_models, X_train, y_train, X_val, y_val, X_test, y_test, 
     refined_model_configs = refined_models.get("refined_models", [])
     refined_plans = []
     for model in refined_model_configs:
+        if model not in MODEL_TASK:
+            raise ValueError("Invalid Model Name")
+        if MODEL_TASK[model.get("model")] != problem_type:
+            continue
+
         refined_plans.append({
             "model": model.get("model"),
             "hyperparameters": model.get("initial_hyperparameters"),
@@ -232,6 +237,10 @@ def _parsing_initialization(llm_result):
         model_name = model.get("model")
         reasoning = model.get("reasoning")
         model_key = model_name.lower().replace(" ", "_")
+        if model not in MODEL_TASK:
+            raise ValueError("Invalid Model Name")
+        if MODEL_TASK[model_key] != problem_type:
+            continue
         hyperparams = model.get("initial_hyperparameters")
 
         model_plans.append(
@@ -308,6 +317,7 @@ def training_models(model, is_supervised, problem_type, X_train, X_val, X_test, 
     metrics = {"supervised": is_supervised}
 
     pt = problem_type.lower()
+    metrics["task"] = pt
     if is_supervised:
         model.fit(X_train, y_train)
         if pt == "regression":
@@ -326,27 +336,26 @@ def training_models(model, is_supervised, problem_type, X_train, X_val, X_test, 
             loss_name = (getattr(model, "loss", "l2") or "l2").lower()
             if loss_name in ("l1"):
                 val_loss, test_loss = val_mae, test_mae
-                metrics["regression_metric"] = "MAE"
+                metrics["primary_metric_name"] = "MAE"
             # l2 + huber
             else:
                 val_loss, test_loss = val_mse, test_mse
-                metrics["regression_metric"] = "MSE"
+                metrics["primary_metric_name"] = "MSE"
 
-            metrics["val_loss"] = val_loss
-            metrics["test_loss"] = test_loss
-            metrics["val_mse"] = val_mse
-            metrics["test_mse"] = test_mse
-            metrics["val_mae"] = val_mae
-            metrics["test_mae"] = test_mae
-
-            metrics["val_accuracy"] = -val_loss
-            metrics["test_accuracy"] = -test_loss
+            metrics["val_metric"] = val_loss
+            metrics["test_metric"] = test_loss
+            metrics["val_score"] = -val_loss
+            metrics["test_score"] = -test_loss
         # Non-regression
         else:
-            metrics["val_accuracy"] = float(
+            metrics["primary_metric_name"] = "Accuracy"
+            metrics["val_score"] = float(
                 accuracy_score(y_val, model.predict(X_val)))
-            metrics["test_accuracy"] = float(
+            metrics["test_score"] = float(
                 accuracy_score(y_test, model.predict(X_test)))
+            metrics["val_metric"] = metrics.get("val_score")
+            metrics["test_metric"] = metrics.get("test_score")
+
     else:
         if hasattr(model, "fit_predict"):
             labels = model.fit_predict(X_train)

@@ -42,9 +42,12 @@ packaging==25.0
 pandas==2.3.3
 pillow==12.0.0
 pipreqs==0.4.13
+psycopg==3.3.2
+psycopg-binary==3.3.2
 pycparser==2.23
 pydantic==2.12.5
 pydantic_core==2.41.5
+PyMySQL==1.1.2
 pyparsing==3.2.5
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.1

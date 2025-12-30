@@ -46,19 +46,26 @@ function InputPage() {
 	const isOverLimit = wordCount > MAX_WORD_COUNT;
 
 	useEffect(() => {
-		async function fetchExamples() {
-			if (examples.length != 0) return;
-			const data = await getExampleDataset();
-			setExamples(data);
+		let cancelled = false;
+
+		async function init() {
+			try {
+				if (examples.length === 0) {
+					const data = await getExampleDataset();
+					if (!cancelled) setExamples(data);
+				}
+			} catch (e) {
+				console.warn("Examples fetch failed:", e);
+			}
+
+			const ok = await wakeUpServer();
+			if (!cancelled) setIsWakingUp(!ok);
 		}
 
-		async function triggerWakeUp() {
-			await wakeUpServer();
-			setIsWakingUp(false);
-		}
-
-		fetchExamples();
-		triggerWakeUp();
+		init();
+		return () => {
+			cancelled = true;
+		};
 	}, []);
 
 	const resetFileState = () => {

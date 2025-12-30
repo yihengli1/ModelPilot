@@ -66,10 +66,33 @@ export const getExampleDataset = async () => {
 	return await resp.json();
 };
 
-export const wakeUpServer = async () => {
-	try {
-		await fetch(`${API_BASE_URL}/health/`, { method: "GET" });
-	} catch (err) {
-		console.error("Server wake-up failed (or is still booting):", err);
+export const wakeUpServer = async ({
+	attempts = 8,
+	timeoutMs = 5000,
+	baseDelayMs = 800,
+} = {}) => {
+	const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+	for (let i = 0; i < attempts; i++) {
+		const controller = new AbortController();
+		const t = setTimeout(() => controller.abort(), timeoutMs);
+
+		try {
+			const resp = await fetch(`${API_BASE_URL}/health/`, {
+				method: "GET",
+				signal: controller.signal,
+				cache: "no-store",
+			});
+
+			clearTimeout(t);
+
+			if (resp.ok) return true;
+		} catch (err) {
+			clearTimeout(t);
+		}
+
+		await sleep(baseDelayMs * Math.min(6, i + 1));
 	}
+
+	return false;
 };

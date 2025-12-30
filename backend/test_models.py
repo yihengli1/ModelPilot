@@ -163,7 +163,7 @@ def main():
         "--csv", default=_repo_relative_path("../test_datasets/basisData.csv"))
     parser.add_argument("--target", default=None)
     parser.add_argument("--problem-type", default="regression",
-                        choices=["classification", "regression"])
+                        choices=["classification", "regression", "clustering"])
     parser.add_argument(
         "--models", default="naive_bayes,decision_tree,knn,linear_regression,kmeans,dbscan,hierarchical")
     parser.add_argument("--include-clustering", action="store_true")

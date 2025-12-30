@@ -60,8 +60,6 @@ For 'dbscan':
   - "eps": (float, e.g., 0.5, 0.1 - distance threshold)
   - "min_samples": (int, e.g., 5, 10)
   - "metric": ("euclidean", "manhattan", "cosine")
-  - "algorithm": ("auto", "ball_tree", "kd_tree", "brute")
-  - "p": (float, usually null or 1, 2)
 
 For 'hierarchical' (AgglomerativeClustering):
   - "n_clusters": (int, e.g., 2, 3, 5)
@@ -185,8 +183,6 @@ REFINEMENT_CONTEXT = """
       - "eps": (float, e.g., 0.5, 0.1 - distance threshold)
       - "min_samples": (int, e.g., 5, 10)
       - "metric": ("euclidean", "manhattan", "cosine")
-      - "algorithm": ("auto", "ball_tree", "kd_tree", "brute")
-      - "p": (float, usually null or 1, 2)
 
       For 'hierarchical' (AgglomerativeClustering):
       - "n_clusters": (int, e.g., 2, 3, 5)

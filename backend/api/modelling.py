@@ -97,22 +97,20 @@ def serialize_artifact(classifier, model, metrics):
         elif model == "kmeans":
             return {
                 "n_clusters": classifier.n_clusters,
-                "inertia": float(classifier.inertia_),
-                "silhouette_score": metrics.get("train_silhouette", -1),
+                "inertia": float(classifier.inertia_)
             }
         elif model == "dbscan":
+            labels = getattr(classifier, "labels_", None)
             return {
-                "n_samples_fit": classifier.n_samples_fit_,
-                "classes_found": len(set(classifier.classes_)),
-                "silhouette_score": metrics.get("train_silhouette", -1),
+                "n_clusters": int(len(set(labels.tolist())) - (1 if -1 in labels else 0)),
+                "n_noise": int((labels == -1).sum())
             }
         elif model == "hierarchical":
             return {
                 "n_clusters": classifier.n_clusters_,
                 "labels": classifier.labels_.tolist(),
                 "n_leaves": classifier.n_leaves_,
-                "children": classifier.children_.tolist() if hasattr(classifier, 'children_') else [],
-                "silhouette_score": metrics.get("train_silhouette", -1),
+                "children": classifier.children_.tolist() if hasattr(classifier, 'children_') else []
             }
         else:
             return {}

@@ -375,10 +375,17 @@ def training_models(model, is_supervised, problem_type, X_train, X_val, X_test, 
         else:
             model.fit(X_train)
             labels = getattr(model, "labels_", getattr(model, "labels", None))
+        labels = np.asarray(labels)
 
-        if labels is None or len(set(labels)) <= 1 or len(set(labels)) >= len(X_train):
+        mask = labels != -1
+        labels_nn = labels[mask]
+        X_nn = X_train[mask]
+
+        unique = set(labels_nn.tolist())
+        if X_nn.shape[0] < 2 or len(unique) < 2:
             score = -1.0
         else:
-            score = float(silhouette_score(X_train, labels))
+            score = float(silhouette_score(X_nn, labels_nn))
+
         metrics["train_silhouette"] = score
     return metrics

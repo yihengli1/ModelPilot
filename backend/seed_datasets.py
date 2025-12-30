@@ -4,6 +4,8 @@ import os
 BASE_URL = "http://127.0.0.1:8000/api/datasets/"
 SOURCE_DIR = "../test_datasets"
 
+# UNCOMMENT BELOW TO SEED DATASETS
+
 datasets_to_upload = [
     # {
     #     "name": "US Elections",
@@ -40,13 +42,13 @@ datasets_to_upload = [
     #     "filename": "student-mat.csv",
     #     "prompt": "Target Column = G3. Predict the student's final grade (G3) based on attributes like study time, failures, and previous grades (G1, G2)."
     # },
-    {
-        "name": "Customer Segmentation (Clustering)",
-        "type": "Clustering",
-        "description": "Group customers into natural segments based on spending behavior and engagement features.",
-        "filename": "clusterData.csv",
-        "prompt": "No target column. Perform clustering to discover meaningful clusters."
-    }
+    # {
+    #     "name": "Customer Segmentation (Clustering)",
+    #     "type": "Clustering",
+    #     "description": "Group customers into natural segments based on spending behavior and engagement features.",
+    #     "filename": "clusterData.csv",
+    #     "prompt": "No target column. Perform clustering to discover meaningful clusters."
+    # }
 
 
 ]

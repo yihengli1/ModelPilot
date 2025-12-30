@@ -152,7 +152,7 @@ REFINEMENT_CONTEXT = """
 
     ### COMBINATORIAL SAFETY
     To prevent timeouts, observe these limits:
-    - **Max 3 values per parameter** (e.g., `[0.1, 0.5, 1.0]`).
+    - **Max 3 values per parameter**
     - **Max 3 parameters tuned per model**.
 
     ### ALLOWED MODELS & PARAMS

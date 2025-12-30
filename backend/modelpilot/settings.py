@@ -1,10 +1,11 @@
 """Django settings for the ModelPilot project."""
-
+import dj_database_url
 import os
 from pathlib import Path
 
 from dotenv import load_dotenv
 from django.core.exceptions import ImproperlyConfigured
+
 
 # Load environment variables from backend/.env if present
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -16,6 +17,7 @@ SECRET_KEY = os.getenv(
 )
 
 USE_S3 = os.environ.get('USE_S3') == 'True'
+USE_RDS = os.environ.get('USE_RDS') == 'True'
 
 if USE_S3:
     AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
@@ -120,21 +122,31 @@ if DEBUG:
         'https://model-pilot.vercel.app', 'http://localhost:5173']
 
 else:
-    print("Using MySQL AWS RDS")
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': os.getenv('DB_NAME'),
-            'USER': os.getenv('DB_USER'),
-            'PASSWORD': os.getenv('DB_PASSWORD'),
-            'HOST': os.getenv('DB_HOST'),
-            'PORT': os.getenv('DB_PORT', '3306'),
-            'OPTIONS': {
-                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-                'charset': 'utf8mb4',
-            },
+    if USE_RDS:
+        print("Using MySQL AWS RDS")
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.mysql',
+                'NAME': os.getenv('DB_NAME'),
+                'USER': os.getenv('DB_USER'),
+                'PASSWORD': os.getenv('DB_PASSWORD'),
+                'HOST': os.getenv('DB_HOST'),
+                'PORT': os.getenv('DB_PORT', '3306'),
+                'OPTIONS': {
+                    'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+                    'charset': 'utf8mb4',
+                },
+            }
         }
-    }
+    else:
+        print("Using Supabase")
+        DATABASES = {
+            "default": dj_database_url.parse(
+                os.environ["DATABASE_URL"],
+                conn_max_age=600,
+                ssl_require=True,
+            )
+        }
     if not os.getenv(
         "DJANGO_SECRET_KEY",
     ):

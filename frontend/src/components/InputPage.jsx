@@ -467,9 +467,13 @@ function InputPage() {
 					<button
 						className="mx-auto flex-row bg-main-black text-white rounded text-lg h-12 w-60 hover:bg-main-black-hover disabled:opacity-60 disabled:cursor-not-allowed"
 						onClick={handleGenerate}
-						disabled={submitting}
+						disabled={submitting || isWakingUp}
 					>
-						{submitting ? "Generating..." : "Generate Model"}
+						{isWakingUp
+							? "Waking server..."
+							: submitting
+							? "Generating..."
+							: "Generate Model"}
 					</button>
 				</div>
 

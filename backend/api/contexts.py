@@ -38,38 +38,37 @@ Propose valid hyperparameters. You are RESTRICTED to the following keys only:
 For 'decision_tree':
    - "criterion": ("gini", "entropy", "log_loss")
    - "max_depth": (int or null)
-   - "min_samples_split": (int or float)
-   - "min_samples_leaf": (int or float)
+   - "min_samples_split": (int)
+   - "min_samples_leaf": (int)
    - "max_features": ("sqrt", "log2", null)
 
 For 'knn':
    - "n_neighbors": (int)
    - "weights": ("uniform", "distance")
    - "metric": ("minkowski", "euclidean", "manhattan")
-   - "p": (int, usually 1 or 2)
 
 For 'naive_bayes':
    - N/A
 
 For 'kmeans':
-   - "n_clusters": (int, e.g., 3, 5, 10)
+   - "n_clusters": (int, e.g., 3, etc.)
    - "init": ("k-means++", "random")
    - "n_init": (int or "auto")
 
 For 'dbscan':
-  - "eps": (float, e.g., 0.5, 0.1 - distance threshold)
-  - "min_samples": (int, e.g., 5, 10)
+  - "eps": (float, e.g., 0.5, etc.)
+  - "min_samples": (int)
   - "metric": ("euclidean", "manhattan", "cosine")
 
 For 'hierarchical' (AgglomerativeClustering):
-  - "n_clusters": (int, e.g., 2, 3, 5)
+  - "n_clusters": (int)
   - "metric": ("euclidean", "l1", "l2", "manhattan", "cosine")
   - "linkage": ("ward", "complete", "average", "single")
      * Note: "ward" only works with "euclidean".
 
 For 'kernel_polynomial':
-   - "degree": int (e.g., 2–5)
-   - "lam": float (ridge strength, e.g., 1e-6–1.0)
+   - "degree": (int)
+   - "lam": (float 1e-6–1.0)
 
 #### Common hyperparameters for all Torch linear models
 Applies to:
@@ -78,11 +77,11 @@ Applies to:
 
 Allowed keys:
 - "optimizer": one of ["sgd", "adam"]
-- "learning_rate": float (e.g., 0.001–0.1)
-- "epochs": int (e.g., 200–2000)
-- "batch_size": int (1 = SGD, n = full GD, or 32–128 = minibatch)
+- "learning_rate": (float, e.g., 0.001–0.1)
+- "epochs": (int, e.g., 200–2000)
+- "batch_size": (int, 1 = SGD, n = full GD, or 32–128 = minibatch)
 - "regularization": one of ["none", "l2", "l1"]
-- "alpha": float (regularization strength, e.g., 0.0–0.1)
+- "alpha": (float 0–1.0)
 
 #### Model-specific additions
 
@@ -161,39 +160,37 @@ REFINEMENT_CONTEXT = """
       For 'decision_tree':
          - "criterion": ("gini", "entropy", "log_loss")
          - "max_depth": (int or null)
-         - "min_samples_split": (int or float)
-         - "min_samples_leaf": (int or float)
+         - "min_samples_split": (int)
+         - "min_samples_leaf": (int)
          - "max_features": ("sqrt", "log2", null)
 
       For 'knn':
          - "n_neighbors": (int)
          - "weights": ("uniform", "distance")
          - "metric": ("minkowski", "euclidean", "manhattan")
-         - "p": (int, usually 1 or 2)
 
       For 'naive_bayes':
          - N/A
 
       For 'kmeans':
-         - "n_clusters": (int, e.g., 3, 5, 10)
+         - "n_clusters": (int, e.g., 3, etc.)
          - "init": ("k-means++", "random")
          - "n_init": (int or "auto")
 
       For 'dbscan':
-      - "eps": (float, e.g., 0.5, 0.1 - distance threshold)
-      - "min_samples": (int, e.g., 5, 10)
+      - "eps": (float, e.g., 0.5, etc.)
+      - "min_samples": (int)
       - "metric": ("euclidean", "manhattan", "cosine")
 
       For 'hierarchical' (AgglomerativeClustering):
-      - "n_clusters": (int, e.g., 2, 3, 5)
+      - "n_clusters": (int)
       - "metric": ("euclidean", "l1", "l2", "manhattan", "cosine")
       - "linkage": ("ward", "complete", "average", "single")
          * Note: "ward" only works with "euclidean".
 
       For 'kernel_polynomial':
-         - "degree": int (e.g., 2–5)
-         - "lam": float (ridge strength, e.g., 1e-6–1.0)
-
+         - "degree": (int)
+         - "lam": (float 1e-6–1.0)
 
       #### Common hyperparameters for all Torch linear models
       Applies to:
@@ -202,17 +199,16 @@ REFINEMENT_CONTEXT = """
 
       Allowed keys:
       - "optimizer": one of ["sgd", "adam"]
-      - "learning_rate": float (e.g., 0.001–0.1)
-      - "epochs": int (e.g., 200–2000)
-      - "batch_size": int (1 = SGD, n = full GD, or 32–128 = minibatch)
+      - "learning_rate": (float, e.g., 0.001–0.1)
+      - "epochs": (int, e.g., 200–2000)
+      - "batch_size": (int, 1 = SGD, n = full GD, or 32–128 = minibatch)
       - "regularization": one of ["none", "l2", "l1"]
-      - "alpha": float (regularization strength, e.g., 0.0–0.1)
+      - "alpha": (float 0–1.0)
 
       #### Model-specific additions
 
       For "linear_regression" (Torch):
       - "loss": one of ["l2", "l1", "huber"]
-
 
 
     ### OUTPUT FORMAT

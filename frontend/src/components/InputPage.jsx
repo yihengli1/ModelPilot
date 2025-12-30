@@ -222,8 +222,8 @@ function InputPage() {
 					</p>
 					{isWakingUp && (
 						<p className="text-xs text-orange-500 mt-2 text-center">
-							Note: Using free tier hosting. Server may take up to 60s to wake
-							up.
+							Note: Server is currently asleep. Using free tier hosting. Server
+							may take up to 60s to wake up.
 						</p>
 					)}
 				</header>

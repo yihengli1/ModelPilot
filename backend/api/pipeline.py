@@ -173,8 +173,14 @@ def refineModel(refined_models, X_train, y_train, X_val, y_val, X_test, y_test, 
     refined_model_configs = refined_models.get("refined_models", [])
     refined_plans = []
     for model in refined_model_configs:
-        if model not in MODEL_TASK:
+
+        model_name = model.get("model")
+        if not isinstance(model_name, str):
             raise ValueError("Invalid Model Name")
+
+        if model_name not in MODEL_TASK:
+            raise ValueError(f"Invalid Model Name: {model_name}")
+
         if MODEL_TASK[model.get("model")] != problem_type:
             continue
 
@@ -237,9 +243,14 @@ def _parsing_initialization(llm_result):
         model_name = model.get("model")
         reasoning = model.get("reasoning")
         model_key = model_name.lower().replace(" ", "_")
-        if model not in MODEL_TASK:
+        model_name = model.get("model")
+        if not isinstance(model_name, str):
             raise ValueError("Invalid Model Name")
-        if MODEL_TASK[model_key] != problem_type:
+
+        if model_name not in MODEL_TASK:
+            raise ValueError(f"Invalid Model Name: {model_name}")
+
+        if MODEL_TASK[model.get("model")] != problem_type:
             continue
         hyperparams = model.get("initial_hyperparameters")
 
@@ -312,6 +323,8 @@ def execute_training_cycle(
 
 
 def training_models(model, is_supervised, problem_type, X_train, X_val, X_test, y_train, y_val, y_test):
+    # Score is for sorting, Metric is for real Loss/Accuracy
+
     from sklearn.metrics import accuracy_score, silhouette_score
 
     metrics = {"supervised": is_supervised}
@@ -368,6 +381,4 @@ def training_models(model, is_supervised, problem_type, X_train, X_val, X_test, 
         else:
             score = float(silhouette_score(X_train, labels))
         metrics["train_silhouette"] = score
-        metrics["val_accuracy"] = score
-        metrics["train_accuracy"] = score
     return metrics

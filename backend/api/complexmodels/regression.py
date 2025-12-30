@@ -162,6 +162,7 @@ class LinearRegressionTorchNN:
 
         with torch.no_grad():
             preds = self.layer(X_t).detach().cpu().numpy().reshape(-1)
+
         return preds
 
 

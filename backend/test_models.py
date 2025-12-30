@@ -128,20 +128,27 @@ def print_leaderboard(results, top_k):
     ok = [r for r in results if not r.get("error")]
     bad = [r for r in results if r.get("error")]
 
-    ok_sorted = sorted(
-        ok,
-        key=lambda r: r.get("metrics", {}).get("val_accuracy", -1e30),
-        reverse=True
-    )
+    def sort_key(r):
+        m = r.get("metrics", {})
+        if "val_score" in m:
+            return m["val_score"]
+        return m.get("train_silhouette", -1e30)
 
-    print("\n=== Leaderboard (sorted by val_accuracy) ===")
+    ok_sorted = sorted(ok, key=sort_key, reverse=True)
+
+    print("\n=== Leaderboard (sorted by val_score / silhouette) ===")
     for i, r in enumerate(ok_sorted[:top_k], start=1):
         model = r.get("model", "?")
         params = r.get("hyperparameters", {})
         m = r.get("metrics", {})
-        va = m.get("val_accuracy", None)
-        ta = m.get("test_accuracy", None)
-        print(f"{i:2d}. {model:16s} val={va} test={ta} params={params}")
+        metric_name = m.get("primary_metric_name")
+
+        if "val_metric" in m:
+            print(
+                f"{i:2d}. {model:16s} {metric_name} val={m.get('val_metric')} test={m.get('test_metric')} params={params}")
+        else:
+            print(
+                f"{i:2d}. {model:16s} silhouette={m.get('train_silhouette')} params={params}")
 
     if bad:
         print("\n=== Errors ===")
@@ -194,7 +201,7 @@ def main():
             #    "naive_bayes",
             #    "decision_tree",
             #    "knn",
-                           "linear_classifier",)]
+            "linear_classifier",)]
     elif args.problem_type == "regression":
         model_plans = [p for p in model_plans if p["model"]
                        in (
@@ -203,7 +210,10 @@ def main():
         )]
     elif args.problem_type == "clustering":
         model_plans = [p for p in model_plans if p["model"]
-                       in ("kmeans", "dbscan", "hierarchical")]
+                       in (
+            "kmeans",
+            "dbscan",
+            "hierarchical")]
 
     results = execute_training_cycle(
         X_train, y_train, X_val, y_val, X_test, y_test, classes,

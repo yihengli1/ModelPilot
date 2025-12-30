@@ -3,16 +3,21 @@ import { Link, useLocation, Navigate } from "react-router-dom";
 import ResultsCard from "./ResultsCard";
 import PythonSnippet from "./PythonSnippet";
 
-const formatPercent = (val, regression) => {
-	if (val === undefined || val === null || val === 0) return "N/A";
+const formatPercent = (val) => {
+	if (val === undefined || val === null || Number.isNaN(val)) return "N/A";
+	return (Number(val) * 100).toFixed(2) + "%";
+};
 
-	//Regression needed
-	if (regression) {
-		val = Math.abs(val);
-		return (val * 100).toFixed(2);
-	}
+const formatNumber = (val, maxDecimalPlaces = 4) => {
+	if (val === undefined || val === null || Number.isNaN(val)) return "N/A";
+	return formatNumberConditional(Number(val), maxDecimalPlaces);
+};
 
-	return (val * 100).toFixed(2) + "%";
+const formatMetricValue = (task, val) => {
+	const t = (task || "").toLowerCase();
+	if (t === "classification") return formatPercent(val);
+	// regression + clustering are not percents
+	return formatNumber(val, t === "clustering" ? 3 : 4);
 };
 
 const formatKey = (key) => {
@@ -91,7 +96,22 @@ function ResultsPage() {
 	}
 
 	const currentModel = final_results[activeIndex];
-	const currentSupervised = currentModel.metrics.supervised;
+	const currentSupervised = Boolean(currentModel?.metrics?.supervised);
+
+	const task = (
+		currentModel?.metrics?.task ||
+		plan?.problem_type ||
+		(currentSupervised ? "classification" : "clustering")
+	).toLowerCase();
+
+	const metricName =
+		currentModel?.metrics?.primary_metric_name ||
+		(task === "clustering" ? "Silhouette" : "Accuracy");
+
+	const valMetric = currentModel?.metrics?.val_metric;
+	const testMetric = currentModel?.metrics?.test_metric;
+
+	const trainSilhouette = currentModel?.metrics?.train_silhouette;
 
 	const handlePrev = () => {
 		setActiveIndex((prev) => (prev === 0 ? totalModels - 1 : prev - 1));
@@ -173,35 +193,37 @@ function ResultsPage() {
 											</p>
 										</div>
 									)}
-									<div className="text-center">
-										<p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-											{currentModel.metrics.regression_metric
-												? "Validation " + currentModel.metrics.regression_metric
-												: "Validation Acc"}
-										</p>
-										<p className="font-mono text-2xl font-bold text-emerald-600">
-											{currentSupervised
-												? formatPercent(
-														currentModel.metrics.val_accuracy,
-														currentModel.metrics.regression_metric
-												  )
-												: formatPercent(0)}
-										</p>
-									</div>
-									<div className="text-center">
-										<p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-											{currentModel.metrics.regression_metric
-												? "Test " + currentModel.metrics.regression_metric
-												: "Test Acc"}
-										</p>
-										<p className="font-mono text-2xl font-bold text-blue-600">
-											{currentSupervised
-												? formatPercent(
-														currentModel.metrics.test_accuracy,
-														currentModel.metrics.regression_metric
-												  )
-												: formatPercent(0)}
-										</p>
+									<div className="flex gap-8">
+										{currentSupervised ? (
+											<>
+												<div className="text-center">
+													<p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+														{`Validation ${metricName}`}
+													</p>
+													<p className="font-mono text-2xl font-bold text-emerald-600">
+														{formatMetricValue(task, valMetric)}
+													</p>
+												</div>
+
+												<div className="text-center">
+													<p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+														{`Test ${metricName}`}
+													</p>
+													<p className="font-mono text-2xl font-bold text-blue-600">
+														{formatMetricValue(task, testMetric)}
+													</p>
+												</div>
+											</>
+										) : (
+											<div className="text-center">
+												<p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+													Train Silhouette
+												</p>
+												<p className="font-mono text-2xl font-bold text-emerald-600">
+													{formatMetricValue("clustering", trainSilhouette)}
+												</p>
+											</div>
+										)}
 									</div>
 								</div>
 							</div>

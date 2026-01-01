@@ -66,11 +66,14 @@ def plot_original_and_pred(csv_path, model, x_cols=None, y_col="y", task="auto")
 
 
 if __name__ == "__main__":
-    CSV = "./test_datasets/smallCities.csv"
+    CSV = "./test_datasets/multiData.csv"
 
     # Classification
-    clf = DecisionTreeClassifier(
-        criterion="gini", max_depth=None, min_samples_leaf=4, random_state=42)
+    # clf = DecisionTreeClassifier(
+    #     criterion="gini", max_depth=None, min_samples_leaf=4, random_state=42)
+    # EXAMPLE 1 in GITHUB REPO
+    clf = model = KNeighborsClassifier(
+        metric="euclidean", n_neighbors=5, weights="uniform")
 
     # Regression
     # reg = LinearRegressionTorchNN()

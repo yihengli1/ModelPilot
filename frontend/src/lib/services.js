@@ -90,7 +90,7 @@ export const wakeUpServer = async ({
 		} catch (err) {
 			clearTimeout(t);
 		}
-
+		console.log("Attempt:" + i + " For waking server");
 		await sleep(baseDelayMs * Math.min(6, i + 1));
 	}
 

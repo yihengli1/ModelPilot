@@ -154,7 +154,8 @@ else:
             "The DJANGO_SECRET_KEY environment variable is not set!")
 
     CORS_ALLOWED_ORIGINS = [
-        'https://model-pilot.vercel.app']
+        'https://model-pilot.vercel.app',
+        r"^https://.*\.vercel\.app$",]
 
 
 AUTH_PASSWORD_VALIDATORS = [

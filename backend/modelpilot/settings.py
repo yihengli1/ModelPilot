@@ -153,9 +153,9 @@ else:
         raise ImproperlyConfigured(
             "The DJANGO_SECRET_KEY environment variable is not set!")
 
-    CORS_ALLOWED_ORIGINS = [
-        'https://model-pilot.vercel.app',
-        r"^https://.*\.vercel\.app$",]
+    CORS_ALLOWED_ORIGINS = ['https://model-pilot.vercel.app']
+
+    CORS_ALLOWED_ORIGIN_REGEXES = [r"^https://.*\.vercel\.app$"]
 
 
 AUTH_PASSWORD_VALIDATORS = [

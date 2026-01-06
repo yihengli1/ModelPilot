@@ -42,7 +42,6 @@ class CreateRunView(APIView):
 
         response_payload = {
             "prompt": prompt,
-            "dataset": request.data.get("dataset", ""),
             "plan": final_results["plan"],
             "final_results": final_results["results"],
         }

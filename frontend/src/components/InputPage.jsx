@@ -20,7 +20,6 @@ function InputPage() {
 	});
 	const [fileName, setFileName] = useState("");
 	const [fileRef, setFileRef] = useState(null);
-	const [datasetText, setDatasetText] = useState("");
 	const [prompt, setPrompt] = useState("");
 	const [error, setError] = useState("");
 	const [loadingExampleId, setLoadingExampleId] = useState(null);
@@ -31,6 +30,10 @@ function InputPage() {
 	const navigate = useNavigate();
 	const [examples, setExamples] = useState([]);
 	const [isWakingUp, setIsWakingUp] = useState(true);
+	const [datasetPreview, setDatasetPreview] = useState({
+		headers: [],
+		rows: [],
+	});
 
 	const headers = rows.length ? rows[0] : [];
 	const bodyRows = useMemo(
@@ -72,7 +75,6 @@ function InputPage() {
 		setRows([]);
 		setFileName("");
 		setFileRef(null);
-		setDatasetText("");
 		setDimensions(() => ({
 			totalRows: 0,
 			totalColumns: 0,
@@ -119,6 +121,15 @@ function InputPage() {
 			const text = event.target.result || "";
 			try {
 				const { previewRows, totalRows, totalColumns } = parseCsvPreview(text);
+
+				const headers = previewRows[0] || [];
+				const preview = {
+					headers: headers.slice(0, 20),
+					rows: previewRows.slice(1, 6).map((r) => r.slice(0, 20)),
+				};
+
+				setDatasetPreview(preview);
+
 				if (!previewRows.length) {
 					setError("Uploaded CSV is empty or missing a header row.");
 					resetFileState();
@@ -131,10 +142,10 @@ function InputPage() {
 					resetFileState();
 					return;
 				}
-				setDatasetText(text);
 				setRows(previewRows);
 				setFileName(file.name);
 				setFileRef(file);
+				console.log(file);
 				setError("");
 			} catch (e) {
 				setError("Could not parse CSV. Please check the format.");
@@ -151,7 +162,7 @@ function InputPage() {
 			const response = await fetch(example.file);
 			const blob = await response.blob();
 			const file = new File([blob], example.name, { type: "text/csv" });
-
+			setDatasetPreview("");
 			setError("");
 			handleFile(file);
 			setPrompt(example.prompt);
@@ -197,7 +208,7 @@ function InputPage() {
 			navigate("/results", {
 				state: {
 					result: data,
-					datasetText,
+					datasetPreview,
 					dimensions,
 				},
 			});
@@ -223,7 +234,7 @@ function InputPage() {
 					{isWakingUp && (
 						<p className="text-xs text-orange-500 mt-2 text-center">
 							Note: Server is currently asleep. Using free tier hosting. Server
-							may take up to 60s to wake up.
+							may take up to 120s to wake up.
 						</p>
 					)}
 				</header>

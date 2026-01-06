@@ -54,35 +54,15 @@ function ResultsPage() {
 		return <Navigate to="/" />;
 	}
 
-	const { result, datasetText, dimensions } = state;
+	const { result, datasetPreview, dimensions } = state;
 
 	const final_results = result.final_results;
 	const plan = result.plan;
 	const totalModels = final_results.length;
 
 	const previewData = useMemo(() => {
-		if (!datasetText) return { headers: [], rows: [] };
-
-		const MAX_COLS = 20;
-		const MAX_ROWS = 5;
-
-		const lines = datasetText.trim().split(/\r?\n/);
-		const nonEmptyLines = lines.filter((line) => line.trim().length > 0);
-
-		if (nonEmptyLines.length === 0) return { headers: [], rows: [] };
-
-		const headers = nonEmptyLines[0]
-			.split(",")
-			.map((c) => c.trim())
-			.slice(0, MAX_COLS);
-		const rows = nonEmptyLines.slice(1, MAX_ROWS + 1).map((line) =>
-			line
-				.split(",")
-				.map((c) => c.trim())
-				.slice(0, MAX_COLS)
-		);
-		return { headers, rows };
-	}, [datasetText]);
+		return datasetPreview || { headers: [], rows: [] };
+	}, [datasetPreview]);
 
 	if (totalModels === 0) {
 		return (

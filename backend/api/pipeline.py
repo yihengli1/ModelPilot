@@ -7,6 +7,8 @@ import gc
 from .services import generate_plan_gpt, generate_target_gpt, summarize_and_select_features, generate_refined_plan_gpt
 from .modelling import model_control, serialize_artifact, MODEL_TASK
 
+from .utils import log_mem
+
 
 TOP_KEEP = 10
 
@@ -105,18 +107,22 @@ def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] 
 
     # Sharp Feature Selection for LLM/Target Column identification
     print("Choosing Target Column and Reducing Features")
+    log_mem("before reduce_features")
     target_name, selected_summaries, aggregated_stats, target_tokens = reduce_features(
         headers, dataset, prompt)
     del aggregated_stats
     gc.collect()
+    log_mem("after reduce_features")
 
     # Initialization
     print("Generating Initial Plan")
+    log_mem("before generate_plan_gpt")
     llm_result, plan_tokens = generate_plan_gpt(
         prompt=prompt,
         summaries=selected_summaries,
         target_name=target_name,
     )
+    log_mem("after generate_plan_gpt")
 
     problem_type, target_column, data_split, model_plans = _parsing_initialization(
         llm_result)
@@ -126,51 +132,58 @@ def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] 
 
     # Data Prep, Split Model
     print("Preparing Datasets")
+    log_mem("before prepare_datasets")
     X_train, y_train, X_val, y_val, X_test, y_test, classes = prepare_datasets(
         dataset, target_column, data_split, problem_type, headers)
+    log_mem("after prepare_datasets")
 
     del dataset
     gc.collect()
 
+    total_models = []
+
     # PyTorch training
     print("Running Initial Model")
-    initial_results = execute_training_cycle(
+    log_mem("before execute_training_cycle")
+    initial_results, evaluationsInitial = execute_training_cycle(
         X_train, y_train, X_val, y_val, X_test, y_test, classes,
-        model_plans, problem_type
+        model_plans, problem_type,
     )
+    log_mem("after execute_training_cycle")
 
     # Based on results 2 call
     print("Generating Refinement Plan")
+    log_mem("before generate_refined_plan_gpt")
     refined_models, refined_tokens = generate_refined_plan_gpt(prompt,
                                                                initial_results,
                                                                target_name,)
+    log_mem("after generate_refined_plan_gpt")
 
     # iterate over range of models/hyperparams/
     print("Refining model")
-    refined_results = refineModel(
+    log_mem("before refineModel")
+    refined_results, evaluationsRefine = refineModel(
         refined_models, X_train, y_train, X_val, y_val, X_test, y_test, classes, problem_type)
+    log_mem("after refineModel")
 
     # best validation error
-    all_results = initial_results + refined_results
-    top_3_models = _select_top_models(all_results, top_k=3)
+    log_mem("before _select_top_models")
 
+    top_3_models = sorted((initial_results + refined_results),
+                          key=lambda r: r["metrics"]["val_score"],
+                          reverse=True)[:3]
+    log_mem("after _select_top_models")
     # calculate token use
     total_tokens = target_tokens + plan_tokens + refined_tokens
     llm_result["total_tokens"] = total_tokens
-    llm_result["total_models"] = len(all_results)
+    llm_result["total_models"] = evaluationsInitial + evaluationsRefine
+
+    # TODO: total models
 
     return {
         "plan": llm_result,
         "results": top_3_models
     }
-
-
-def _select_top_models(all_results, top_k=3):
-    topk = []
-    for r in all_results:
-        push_topk(topk, r)
-
-    return topk[:top_k]
 
 
 def refineModel(refined_models, X_train, y_train, X_val, y_val, X_test, y_test, classes, problem_type):
@@ -301,6 +314,7 @@ def execute_training_cycle(
 ) -> List[Dict[str, Any]]:
     from sklearn.model_selection import ParameterGrid
     results = []
+    evaluated = 0
 
     for plan in model_plans:
         model_type = plan.get("model")
@@ -311,6 +325,7 @@ def execute_training_cycle(
                            v]) for k, v in params.items()}
 
         for single_param_set in ParameterGrid(grid_params):
+            evaluated += 1
             try:
                 model, is_supervised = model_control(
                     model_type, single_param_set)
@@ -329,12 +344,20 @@ def execute_training_cycle(
 
                 # memory purposes
                 push_topk(results, item)
-
             except Exception as exc:
-                print(exc)
+                push_topk(results, {"model": model_type, "error": str(
+                    exc), "metrics": {"val_score": -1e18}})
                 continue
+            finally:
+                try:
+                    del model
+                except Exception:
+                    pass
+                counter += 1
+                if counter % 5 == 0:
+                    gc.collect()
 
-    return results
+    return results, evaluated
 
 
 def training_models(model, is_supervised, problem_type, X_train, X_val, X_test, y_train, y_val, y_test):
@@ -360,6 +383,8 @@ def training_models(model, is_supervised, problem_type, X_train, X_val, X_test, 
             test_mse = float(np.mean((test_pred - yt) ** 2))
             val_mae = float(np.mean(np.abs(val_pred - yv)))
             test_mae = float(np.mean(np.abs(test_pred - yt)))
+
+            del val_pred, test_pred, yv, yt
 
             loss_name = (getattr(model, "loss", "l2") or "l2").lower()
             if loss_name in ("l1"):
@@ -407,4 +432,5 @@ def training_models(model, is_supervised, problem_type, X_train, X_val, X_test, 
         metrics["val_metric"] = score
         metrics["test_score"] = score
         metrics["test_metric"] = score
+
     return metrics

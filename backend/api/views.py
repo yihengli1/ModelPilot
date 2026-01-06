@@ -11,9 +11,7 @@ from .models import Dataset
 import math
 import numpy as np
 
-import os
-import psutil
-import time
+from .utils import log_mem
 
 
 class HealthCheckView(APIView):
@@ -96,15 +94,3 @@ def find_nan(obj, path="root"):
         if isinstance(obj, (float, np.floating)):
             if not math.isfinite(float(obj)):
                 print("NON-FINITE:", path, obj)
-
-
-# MEMORY DEBUGGING
-_proc = psutil.Process(os.getpid())
-
-
-def mem_mb():
-    return _proc.memory_info().rss / (1024 * 1024)
-
-
-def log_mem(msg):
-    print(f"[MEM] {msg}: {mem_mb():.1f} MB")

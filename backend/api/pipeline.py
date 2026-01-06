@@ -1,14 +1,21 @@
-import math
+
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
-from rest_framework import status
 from rest_framework.response import Response
-
-import torch
+import gc
 
 from .services import generate_plan_gpt, generate_target_gpt, summarize_and_select_features, generate_refined_plan_gpt
 from .modelling import model_control, serialize_artifact, MODEL_TASK
+
+
+TOP_KEEP = 10
+
+
+def push_topk(results, item):
+    results.append(item)
+    results.sort(key=lambda r: r["metrics"].get("val_score"), reverse=True)
+    del results[TOP_KEEP:]
 
 
 def _select_target_index(target_column: Any, headers: Optional[List[str]] = None) -> int:
@@ -100,6 +107,8 @@ def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] 
     print("Choosing Target Column and Reducing Features")
     target_name, selected_summaries, aggregated_stats, target_tokens = reduce_features(
         headers, dataset, prompt)
+    del aggregated_stats
+    gc.collect()
 
     # Initialization
     print("Generating Initial Plan")
@@ -115,12 +124,15 @@ def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] 
     # Feature Selection
     # TODO:
 
-    # Data Prep
+    # Data Prep, Split Model
     print("Preparing Datasets")
     X_train, y_train, X_val, y_val, X_test, y_test, classes = prepare_datasets(
         dataset, target_column, data_split, problem_type, headers)
 
-    # # Split Model, PyTorch training
+    del dataset
+    gc.collect()
+
+    # PyTorch training
     print("Running Initial Model")
     initial_results = execute_training_cycle(
         X_train, y_train, X_val, y_val, X_test, y_test, classes,
@@ -153,14 +165,12 @@ def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] 
     }
 
 
-def _select_top_models(results: List[Dict[str, Any]], top_k: int = 3) -> List[Dict[str, Any]]:
-    valid_results = [r for r in results if not r.get("error")]
-    sorted_results = sorted(
-        valid_results,
-        key=lambda x: x["metrics"].get("val_score", 0.0),
-        reverse=True
-    )
-    return sorted_results[:top_k]
+def _select_top_models(all_results, top_k=3):
+    topk = []
+    for r in all_results:
+        push_topk(topk, r)
+
+    return topk[:top_k]
 
 
 def refineModel(refined_models, X_train, y_train, X_val, y_val, X_test, y_test, classes, problem_type):
@@ -172,15 +182,16 @@ def refineModel(refined_models, X_train, y_train, X_val, y_val, X_test, y_test, 
         model_name = model.get("model")
         if not isinstance(model_name, str):
             raise ValueError("Invalid Model Name")
+        model_key = model_name.lower().replace(" ", "_")
 
-        if model_name not in MODEL_TASK:
+        if model_key not in MODEL_TASK:
             raise ValueError(f"Invalid Model Name: {model_name}")
 
-        if MODEL_TASK[model.get("model")] != problem_type:
+        if MODEL_TASK[model_key] != problem_type:
             continue
 
         refined_plans.append({
-            "model": model.get("model"),
+            "model": model_key,
             "hyperparameters": model.get("initial_hyperparameters"),
             "reasoning": model.get("reasoning")
         })
@@ -244,24 +255,21 @@ def _parsing_initialization(llm_result):
     model_plans = []
     for model in recommended_models:
         model_name = model.get("model")
-        reasoning = model.get("reasoning")
-        model_key = model_name.lower().replace(" ", "_")
-        model_name = model.get("model")
         if not isinstance(model_name, str):
             raise ValueError("Invalid Model Name")
+        model_key = model_name.lower().replace(" ", "_")
 
-        if model_name not in MODEL_TASK:
+        if model_key not in MODEL_TASK:
             raise ValueError(f"Invalid Model Name: {model_name}")
 
-        if MODEL_TASK[model.get("model")] != problem_type:
+        if MODEL_TASK[model_key] != problem_type:
             continue
-        hyperparams = model.get("initial_hyperparameters")
 
         model_plans.append(
             {
                 "model": model_key,
-                "hyperparameters": hyperparams,
-                "reasoning": reasoning
+                "hyperparameters": model.get("initial_hyperparameters"),
+                "reasoning": model.get("reasoning")
             }
         )
 
@@ -318,6 +326,8 @@ def execute_training_cycle(
                     "metrics": metrics,
                     "artifact": artifact
                 })
+                # memory purposes
+                push_topk(results, results[-1])
 
             except Exception as exc:
                 results.append({"model": model_type, "error": str(exc)})
@@ -390,5 +400,9 @@ def training_models(model, is_supervised, problem_type, X_train, X_val, X_test, 
         else:
             score = float(silhouette_score(X_nn, labels_nn))
 
-        metrics["train_silhouette"] = score
+        metrics["primary_metric_name"] = "Silhouette"
+        metrics["val_score"] = score
+        metrics["val_metric"] = score
+        metrics["test_score"] = score
+        metrics["test_metric"] = score
     return metrics

@@ -353,8 +353,7 @@ def execute_training_cycle(
                     del model
                 except Exception:
                     pass
-                counter += 1
-                if counter % 5 == 0:
+                if evaluated % 5 == 0:
                     gc.collect()
 
     return results, evaluated

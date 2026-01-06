@@ -1,4 +1,3 @@
-import sys
 import csv
 import io
 from rest_framework import serializers
@@ -10,6 +9,52 @@ MAX_COLUMNS = 1000
 MAX_ROWS = 500000
 MAX_WORD_COUNT = 500
 MAX_FILE_SIZE_MB = 10
+
+
+class RunInputSerializer(serializers.Serializer):
+    dataset_file = serializers.FileField()
+    prompt = serializers.CharField(required=False, allow_blank=True)
+
+    def validate(self, attrs):
+        f = attrs["dataset_file"]
+
+        if f.size > MAX_FILE_SIZE_MB * 1024 * 1024:
+            raise serializers.ValidationError(
+                {"dataset_file": f"File too large. Max is {MAX_FILE_SIZE_MB}MB."}
+            )
+
+        raw = f.read()
+
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            text = raw.decode("latin-1")
+
+        try:
+            reader = csv.reader(io.StringIO(text))
+            header = next(reader)
+            if not header:
+                raise serializers.ValidationError(
+                    {"dataset_file": "Missing header row."})
+        except StopIteration:
+            raise serializers.ValidationError({"dataset_file": "Empty file."})
+        except csv.Error:
+            raise serializers.ValidationError(
+                {"dataset_file": "Invalid CSV format."})
+
+        prompt = (attrs.get("prompt") or "").strip()
+        if len(prompt.split()) > MAX_WORD_COUNT:
+            raise serializers.ValidationError(
+                {"prompt": f"Prompt exceeds {MAX_WORD_COUNT} words."}
+            )
+        print("4")
+
+        headers, matrix = parse_csv_to_matrix(text)
+
+        attrs["headers"] = headers
+        attrs["dataset_matrix"] = matrix
+        attrs["prompt"] = prompt
+        return attrs
 
 
 class DatasetSerializer(serializers.ModelSerializer):
@@ -43,7 +88,7 @@ class DatasetSerializer(serializers.ModelSerializer):
             name = data.get(
                 'name', self.instance.name if self.instance else None)
             description = data.get(
-                'name', self.instance.description if self.instance else None)
+                'description', self.instance.description if self.instance else None)
 
             if not prompt:
                 raise serializers.ValidationError(
@@ -59,57 +104,3 @@ class DatasetSerializer(serializers.ModelSerializer):
                     {"description": "This field is required when is_example is True."})
 
         return data
-
-
-class RunInputSerializer(serializers.Serializer):
-    dataset = serializers.CharField()
-    prompt = serializers.CharField(required=False, allow_blank=True)
-
-    def validate(self, attrs):
-        dataset = attrs.get("dataset", "")
-
-        if len(dataset.encode('utf-8')) > (MAX_FILE_SIZE_MB * 1024 * 1024):
-            raise serializers.ValidationError(
-                {"dataset": f"File too large. Max size is {MAX_FILE_SIZE_MB}MB."}
-            )
-
-        try:
-            f = io.StringIO(dataset)
-            reader = csv.reader(f)
-            try:
-                header = next(reader)
-                if len(header) > MAX_COLUMNS:
-                    raise serializers.ValidationError(
-                        {"dataset": f"Too many columns. Max is {MAX_COLUMNS}."}
-                    )
-            except StopIteration:
-                raise serializers.ValidationError({"dataset": "Empty file."})
-
-            # Check rows (iterating is cheaper than loading all at once)
-            row_count = 0
-            for _ in reader:
-                row_count += 1
-                if row_count > MAX_ROWS:
-                    raise serializers.ValidationError(
-                        {"dataset": f"Too many rows. Max is {MAX_ROWS}."}
-                    )
-
-        except csv.Error:
-            raise serializers.ValidationError(
-                {"dataset": "Invalid CSV format."})
-
-        try:
-            headers, matrix = parse_csv_to_matrix(dataset)
-        except ValueError as exc:
-            raise serializers.ValidationError({"dataset": str(exc)})
-
-        word_count = len(attrs.get("prompt").strip().split())
-
-        if word_count > MAX_WORD_COUNT:
-            raise serializers.ValidationError(
-                f"Prompt exceeds the {MAX_WORD_COUNT} word limit. (Current: {word_count} words)"
-            )
-
-        attrs["headers"] = headers
-        attrs["dataset_matrix"] = matrix
-        return attrs

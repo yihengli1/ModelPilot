@@ -20,14 +20,11 @@ class HealthCheckView(APIView):
 
 
 class CreateRunView(APIView):
-    def post(self, request):
+    permission_classes = [AllowAny]
+    parser_classes = (MultiPartParser, FormParser)
 
-        serializer = RunInputSerializer(
-            data={
-                "dataset": request.data.get("dataset", ""),
-                "prompt": request.data.get("prompt", ""),
-            }
-        )
+    def post(self, request):
+        serializer = RunInputSerializer(data=request.data)
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -37,8 +34,6 @@ class CreateRunView(APIView):
         prompt = serializer.validated_data.get("prompt", "")
         final_results = training_pipeline(
             prompt, dataset_matrix, headers=headers)
-
-        find_nan(final_results)
 
         response_payload = {
             "prompt": prompt,

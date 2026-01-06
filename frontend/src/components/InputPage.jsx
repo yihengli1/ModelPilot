@@ -145,7 +145,6 @@ function InputPage() {
 				setRows(previewRows);
 				setFileName(file.name);
 				setFileRef(file);
-				console.log(file);
 				setError("");
 			} catch (e) {
 				setError("Could not parse CSV. Please check the format.");
@@ -202,6 +201,7 @@ function InputPage() {
 		setSubmitError("");
 		setSubmitting(true);
 		try {
+			console.log("before");
 			const data = await postCreate(prompt, fileRef);
 
 			console.log(data);

@@ -9,15 +9,15 @@ const readFullFile = (file) =>
 	});
 
 export const postCreate = async (prompt, fileRef) => {
-	const dataset = await readFullFile(fileRef);
+	// const dataset = await readFullFile(fileRef);
+
+	const form = new FormData();
+	form.append("dataset_file", fileRef);
+	form.append("prompt", prompt || "");
 
 	const resp = await fetch(`${API_BASE_URL}/run-prompt/`, {
 		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({
-			dataset,
-			prompt,
-		}),
+		body: form,
 	});
 	if (!resp.ok) {
 		const text = await resp.text();

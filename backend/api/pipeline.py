@@ -1,8 +1,7 @@
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import numpy as np
-from rest_framework.response import Response
 import gc
 
 from .services import generate_plan_gpt, generate_target_gpt, summarize_and_select_features, generate_refined_plan_gpt
@@ -29,7 +28,8 @@ def _select_target_index(target_column: Any, headers: Optional[List[str]] = None
             return lowered.index(target_column.lower())
     if isinstance(target_column, int):
         return target_column
-    return Response("Target Column is not defined on a Supervised Learning Task")
+    raise ValueError(
+        "Target Column is not defined on a Supervised Learning Task")
 
 
 def _split_dataset(
@@ -320,17 +320,19 @@ def execute_training_cycle(
 
                 artifact = serialize_artifact(model, model_type, metrics)
 
-                results.append({
+                item = {
                     "model": model_type,
                     "hyperparameters": single_param_set,
                     "metrics": metrics,
                     "artifact": artifact
-                })
+                }
+
                 # memory purposes
-                push_topk(results, results[-1])
+                push_topk(results, item)
 
             except Exception as exc:
-                results.append({"model": model_type, "error": str(exc)})
+                print(exc)
+                continue
 
     return results
 

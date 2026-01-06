@@ -99,7 +99,7 @@ class RunInputSerializer(serializers.Serializer):
                 {"dataset": "Invalid CSV format."})
 
         try:
-            headers, _, matrix = parse_csv_to_matrix(dataset)
+            headers, matrix = parse_csv_to_matrix(dataset)
         except ValueError as exc:
             raise serializers.ValidationError({"dataset": str(exc)})
 

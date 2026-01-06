@@ -27,7 +27,6 @@ def parse_csv_to_matrix(raw_csv: str):
     df = df[numeric_cols]
 
     headers = df.columns.tolist()
-    parsed_rows = df.to_dict(orient="records")
 
     # numeric matrix (fallback to object if needed)
     try:
@@ -35,7 +34,7 @@ def parse_csv_to_matrix(raw_csv: str):
     except ValueError:
         matrix = df.to_numpy(dtype=object)
 
-    return headers, parsed_rows, matrix
+    return headers, matrix
 
 
 def generate_plan_gpt(

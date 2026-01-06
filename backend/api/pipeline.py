@@ -31,7 +31,7 @@ def _split_dataset(
     data_split: Dict[str, Any],
     headers: Optional[List[str]] = None,
     problem_type: str = "classification",
-) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, np.ndarray]:
+):
     target_idx = _select_target_index(target_column, headers)
 
     ratios = None
@@ -44,17 +44,19 @@ def _split_dataset(
 
     # Supervised
     if target_idx != -1:
+        d = dataset.shape[1]
+        mask = np.ones(d, dtype=bool)
+        mask[target_idx] = False
+
         y = dataset[:, target_idx]
-        X = np.delete(dataset, target_idx, axis=1)
+        X = dataset[:, mask]
         if problem_type.lower() == "regression":
-            try:
-                y_encoded = np.asarray(y, dtype=float)
-            except (TypeError, ValueError) as exc:
-                raise ValueError(
-                    "Target column could not be converted to float for regression.") from exc
+            y_encoded = np.asarray(y, dtype=np.float32)
+            y_dtype = np.float32
             classes = np.array([])
         else:
             classes, y_encoded = np.unique(y, return_inverse=True)
+            y_dtype = np.int64
 
     # Unsupervised
     else:
@@ -62,13 +64,13 @@ def _split_dataset(
         y_encoded = None
         classes = np.array([])
     try:
-        X_float = np.asarray(X, dtype=float)
+        X_float = np.asarray(X, dtype=np.float32)
     except (TypeError, ValueError) as exc:
         raise ValueError(
             "Features could not be converted to float for training.") from exc
 
     n, _ = X_float.shape
-    perm = torch.randperm(n).numpy()
+    perm = np.random.permutation(n)
     train_end = int(ratios[0] * n)
     val_end = train_end + int(ratios[1] * n)
 
@@ -76,27 +78,20 @@ def _split_dataset(
     val_idx = perm[train_end:val_end] if val_end > train_end else perm[:0]
     test_idx = perm[val_end:] if val_end < n else perm[:0]
 
-    X_train = torch.tensor(X_float[train_idx], dtype=torch.float32)
-    X_val = torch.tensor(X_float[val_idx], dtype=torch.float32)
-    X_test = torch.tensor(X_float[test_idx], dtype=torch.float32)
+    X_train = X_float[train_idx]
+    X_val = X_float[val_idx]
+    X_test = X_float[test_idx]
 
     if target_idx != -1:
-        y_dtype = torch.float32 if problem_type.lower() == "regression" else torch.long
-        y_train = torch.tensor(y_encoded[train_idx], dtype=y_dtype)
-        y_val = torch.tensor(y_encoded[val_idx], dtype=y_dtype)
-        y_test = torch.tensor(y_encoded[test_idx], dtype=y_dtype)
+        y_train = y_encoded[train_idx].astype(y_dtype, copy=False)
+        y_val = y_encoded[val_idx].astype(y_dtype, copy=False)
+        y_test = y_encoded[test_idx].astype(y_dtype, copy=False)
     else:
-        y_train = torch.empty(0, dtype=torch.long)
-        y_val = torch.empty(0, dtype=torch.long)
-        y_test = torch.empty(0, dtype=torch.long)
+        y_train = np.empty(0, dtype=np.int64)
+        y_val = np.empty(0, dtype=np.int64)
+        y_test = np.empty(0, dtype=np.int64)
 
     return X_train, y_train, X_val, y_val, X_test, y_test, classes
-
-
-def to_numpy(x):
-    if hasattr(x, 'numpy'):
-        return x.numpy()
-    return np.array(x)
 
 
 def training_pipeline(prompt, dataset: np.ndarray, headers: Optional[List[str]] = None):
@@ -200,9 +195,17 @@ def reduce_features(headers, dataset, prompt):
     target_name, target_tokens = generate_target_gpt(
         user_prompt=prompt, headers=headers)
 
+    MAX_ROWS_FOR_SUMMARY = 10000
+    if dataset.shape[0] > MAX_ROWS_FOR_SUMMARY:
+        idx = np.random.choice(
+            dataset.shape[0], MAX_ROWS_FOR_SUMMARY, replace=False)
+        dataset_for_summary = dataset[idx]
+    else:
+        dataset_for_summary = dataset
+
     selected_summaries, aggregated_stats = summarize_and_select_features(
         headers,
-        dataset,
+        dataset_for_summary,
         target_name=target_name
     )
 
@@ -271,15 +274,15 @@ def prepare_datasets(
     data_split,
     problem_type,
     headers,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
+):
     X_train, y_train, X_val, y_val, X_test, y_test, classes = _split_dataset(
         dataset, target_column, data_split, problem_type=problem_type, headers=headers
     )
 
     return (
-        to_numpy(X_train), to_numpy(y_train),
-        to_numpy(X_val),   to_numpy(y_val),
-        to_numpy(X_test),  to_numpy(y_test),
+        X_train, y_train,
+        X_val,   y_val,
+        X_test,  y_test,
         classes
     )
 

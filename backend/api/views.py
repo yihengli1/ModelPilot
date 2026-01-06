@@ -11,6 +11,10 @@ from .models import Dataset
 import math
 import numpy as np
 
+import os
+import psutil
+import time
+
 
 class HealthCheckView(APIView):
     permission_classes = [AllowAny]
@@ -24,7 +28,9 @@ class CreateRunView(APIView):
     parser_classes = (MultiPartParser, FormParser)
 
     def post(self, request):
+        log_mem("start create request")
         serializer = RunInputSerializer(data=request.data)
+        log_mem("after serializer")
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -32,9 +38,10 @@ class CreateRunView(APIView):
         dataset_matrix = serializer.validated_data["dataset_matrix"]
         headers = serializer.validated_data.get("headers")
         prompt = serializer.validated_data.get("prompt", "")
+        log_mem("before training_pipeline")
         final_results = training_pipeline(
             prompt, dataset_matrix, headers=headers)
-
+        log_mem("after training_pipeline")
         response_payload = {
             "prompt": prompt,
             "plan": final_results["plan"],
@@ -89,3 +96,15 @@ def find_nan(obj, path="root"):
         if isinstance(obj, (float, np.floating)):
             if not math.isfinite(float(obj)):
                 print("NON-FINITE:", path, obj)
+
+
+# MEMORY DEBUGGING
+_proc = psutil.Process(os.getpid())
+
+
+def mem_mb():
+    return _proc.memory_info().rss / (1024 * 1024)
+
+
+def log_mem(msg):
+    print(f"[MEM] {msg}: {mem_mb():.1f} MB")

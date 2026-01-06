@@ -24,11 +24,7 @@ class RunInputSerializer(serializers.Serializer):
             )
 
         raw = f.read()
-
-        try:
-            text = raw.decode("utf-8")
-        except UnicodeDecodeError:
-            text = raw.decode("latin-1")
+        text = raw.decode("utf-8")
 
         try:
             reader = csv.reader(io.StringIO(text))
@@ -47,7 +43,6 @@ class RunInputSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 {"prompt": f"Prompt exceeds {MAX_WORD_COUNT} words."}
             )
-        print("4")
 
         headers, matrix = parse_csv_to_matrix(text)
 

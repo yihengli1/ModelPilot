@@ -197,10 +197,10 @@ function ResultsPage() {
 										) : (
 											<div className="text-center">
 												<p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-													Train Silhouette
+													{`Test ${metricName}`}
 												</p>
 												<p className="font-mono text-2xl font-bold text-emerald-600">
-													{formatMetricValue("clustering", trainSilhouette)}
+													{formatMetricValue(task, testMetric)}
 												</p>
 											</div>
 										)}

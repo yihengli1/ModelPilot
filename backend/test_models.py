@@ -215,7 +215,7 @@ def main():
             "dbscan",
             "hierarchical")]
 
-    results = execute_training_cycle(
+    results, evaluated = execute_training_cycle(
         X_train, y_train, X_val, y_val, X_test, y_test, classes,
         model_plans, args.problem_type
     )

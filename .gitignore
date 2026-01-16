@@ -7,4 +7,4 @@ __pycache__/
 db.sqlite3
 demo/
 /backend/graph_visualization.py
-.env.yaml
+**/env.yaml

@@ -1,11 +1,80 @@
 from sklearn.decomposition import PCA
+import numpy as np
 
 
-# Use a wrapper class for pipilene
+# If u want to PCA through the application
+class PCAModel:
+    """
+    This wrapper exists so we can expose a couple of convenient artifacts after fit:
+      - k_components_: the actual number of components chosen after fitting
+      - variance_explained_: total explained variance ratio of the retained components
+    """
+
+    def __init__(
+        self,
+        n_components,
+        svd_solver="auto",
+        whiten=False,
+        random_state=42,
+    ):
+        self.pca = PCA(
+            n_components=n_components,
+            svd_solver=svd_solver,
+            whiten=whiten,
+            random_state=random_state,
+        )
+
+        self.is_fit_ = False
+
+        self.k_components_ = None
+        self.variance_explained_ = None
+
+    def _update_pca_stats(self) -> None:
+        self.k_components_ = int(getattr(self.pca, "n_components_", 0) or 0)
+        evr = getattr(self.pca, "explained_variance_ratio_", None)
+        self.variance_explained_ = float(
+            np.sum(evr)) if evr is not None else 0.0
+
+    def fit(self, X, y=None):
+        self.pca.fit(X)
+        self._update_pca_stats()
+        self.is_fit_ = True
+        return self
+
+    def transform(self, X):
+        if not self.is_fit_:
+            raise ValueError("PCA is not fit yet.")
+        return self.pca.transform(X)
+
+    def fit_transform(self, X, y=None):
+        Z = self.pca.fit_transform(X)
+        self._update_pca_stats()
+        self.is_fit_ = True
+        return Z
+
+    def predict(self, X):
+        return self.transform(X)
+
+    def fit_predict(self, X, y=None):
+        return self.fit_transform(X)
+
+
+# preprocessing
 class PCAPipeline:
-    def __init__(self, model, n_components, svd_solver, whiten):
-        self.pca = PCA(n_components=n_components,
-                       svd_solver=svd_solver, whiten=whiten)
+    def __init__(
+        self,
+        model,
+        n_components=None,
+        svd_solver="auto",
+        whiten=False,
+        random_state=42,
+    ):
+        self.pca = PCA(
+            n_components=n_components,
+            svd_solver=svd_solver,
+            whiten=whiten,
+            random_state=random_state,
+        )
         self.model = model
         self.is_fit_ = False
 
@@ -13,10 +82,11 @@ class PCAPipeline:
         self.k_components_ = None
         self.variance_explained_ = None
 
-    def _update_pca_stats(self):
-        self.k_components_ = int(self.pca.n_components_)
+    def _update_pca_stats(self) -> None:
+        self.k_components_ = int(getattr(self.pca, "n_components_", 0) or 0)
+        evr = getattr(self.pca, "explained_variance_ratio_", None)
         self.variance_explained_ = float(
-            self.pca.explained_variance_ratio_.sum())
+            np.sum(evr)) if evr is not None else 0.0
 
     def fit(self, X, y=None):
         Z = self.pca.fit_transform(X)
@@ -27,8 +97,14 @@ class PCAPipeline:
                 self.model.fit(Z)
         else:
             self.model.fit(Z, y)
+
         self.is_fit_ = True
         return self
+
+    def transform(self, X):
+        if not self.is_fit_:
+            raise ValueError("Pipeline is not fit yet.")
+        return self.pca.transform(X)
 
     def predict(self, X):
         if not self.is_fit_:
@@ -39,10 +115,12 @@ class PCAPipeline:
     def fit_predict(self, X):
         Z = self.pca.fit_transform(X)
         self._update_pca_stats()
+
         if hasattr(self.model, "fit_predict"):
             out = self.model.fit_predict(Z)
         else:
             self.model.fit(Z)
             out = self.model.predict(Z)
+
         self.is_fit_ = True
         return out

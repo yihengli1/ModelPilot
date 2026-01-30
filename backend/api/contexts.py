@@ -21,6 +21,7 @@ Recommend 1-3 appropriate model architectures from this allowed list ONLY:
    - "kmeans" (Unsupervised)
    - "dbscan" (Unsupervised)
    - "hierarchical" (Unsupervised)
+   - "pca" (dimension_reduction)
 
 Infer the best choice based on:
 - Data shape & size
@@ -31,6 +32,7 @@ Infer the best choice based on:
 - If "problem_type" is "regression", choose from "linear_regression", kernel_polynomial".
 - If "problem_type" is "classification", choose from "decision_tree", "naive_bayes", "knn", "linear_classifier".
 - If "problem_type" is "clustering", choose from "kmeans", "dbscan", "hierarchical".
+- If "problem_type" is "dimension_reduction", choose from ""pca".
 
 ### 3. Hyperparameter Proposal
 Propose valid hyperparameters. You are RESTRICTED to the following keys only:
@@ -65,6 +67,11 @@ For 'hierarchical' (AgglomerativeClustering):
   - "metric": ("euclidean", "l1", "l2", "manhattan", "cosine")
   - "linkage": ("ward", "complete", "average", "single")
      * Note: "ward" only works with "euclidean".
+
+For 'pca':
+  - "n_components": (int, float, or null)
+  - "svd_solver": ("auto", "full", "randomized")
+  - "whiten": (true or false)
 
 For 'kernel_polynomial':
    - "degree": (int)
@@ -187,6 +194,12 @@ REFINEMENT_CONTEXT = """
       - "metric": ("euclidean", "l1", "l2", "manhattan", "cosine")
       - "linkage": ("ward", "complete", "average", "single")
          * Note: "ward" only works with "euclidean".
+
+      For 'pca':
+      - "model": ()
+      - "n_components": (int, float, or null)
+      - "svd_solver": ("auto", "full", "randomized")
+      - "whiten": (true or false)
 
       For 'kernel_polynomial':
          - "degree": (int)

@@ -5,7 +5,6 @@ import numpy as np
 # If u want to PCA through the application
 class PCAModel:
     def __init__(self, n_components, svd_solver="auto", whiten=False, random_state=42):
-        print("init pca", flush=True)
         self.pca = PCA(
             n_components=n_components,
             svd_solver=svd_solver,
@@ -23,7 +22,6 @@ class PCAModel:
             np.sum(evr)) if evr is not None else 0.0
 
     def fit(self, X, y=None):
-        print("PCA fit", flush=True)
         self.pca.fit(X)
         self._update_pca_stats()
         self.is_fit_ = True
@@ -35,7 +33,6 @@ class PCAModel:
         return self.pca.transform(X)
 
     def fit_transform(self, X, y=None):
-        print("PCA fit_transform", flush=True)
         Z = self.pca.fit_transform(X)
         self._update_pca_stats()
         self.is_fit_ = True

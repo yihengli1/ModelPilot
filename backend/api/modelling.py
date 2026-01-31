@@ -1,7 +1,6 @@
 from .complexmodels.regression import LinearRegressionTorchNN, KernelPolynomialTorch
 from .complexmodels.linear_classifier import LinearClassifierTorchNN
-from .complexmodels.pca import PCAPipeline
-
+from .complexmodels.pca import PCAModel as WrappedPCA
 
 MODEL_TASK = {
     "linear_regression": "regression",
@@ -13,7 +12,7 @@ MODEL_TASK = {
     "kmeans": "clustering",
     "dbscan": "clustering",
     "hierarchical": "clustering",
-    "pca": "clustering",
+    "pca": "dimension_reduction",
 }
 
 
@@ -22,7 +21,6 @@ def model_control(model_type, single_param_set):
     from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering
     from sklearn.naive_bayes import GaussianNB
     from sklearn.tree import DecisionTreeClassifier
-    from sklearn.decomposition import PCA
 
     is_supervised = True
     if model_type == "naive_bayes":
@@ -54,7 +52,7 @@ def model_control(model_type, single_param_set):
         model_type = AgglomerativeClustering(**single_param_set)
         is_supervised = False
     elif model_type == "pca":
-        model_type = PCA(**single_param_set)
+        model_type = WrappedPCA(**single_param_set)
         is_supervised = False
     else:
         raise ValueError(
@@ -120,18 +118,10 @@ def serialize_artifact(classifier, model, metrics):
                 "children": classifier.children_.tolist() if hasattr(classifier, 'children_') else []
             }
         elif model == "pca":
+            pca = getattr(classifier, "pca", classifier)
             return {
-                "n_components": int(getattr(classifier, "n_components_", getattr(classifier, "n_components", 0)) or 0),
-                "explained_variance_ratio": (
-                    classifier.explained_variance_ratio_.tolist()
-                    if hasattr(classifier, "explained_variance_ratio_") and classifier.explained_variance_ratio_ is not None
-                    else []
-                ),
-                "singular_values": (
-                    classifier.singular_values_.tolist()
-                    if hasattr(classifier, "singular_values_") and classifier.singular_values_ is not None
-                    else []
-                ),
+                "n_components": int(getattr(pca, "n_components_", getattr(pca, "n_components", 0)) or 0),
+                "variance_explained": getattr(classifier, "variance_explained_", None)
             }
         else:
             return {}

@@ -36,7 +36,7 @@ def load_csv(csv_path: str):
     return headers, dataset
 
 
-def build_model_plans(include_clustering: bool) -> List[Dict[str, Any]]:
+def build_model_plans(include_clustering: bool, include_pca) -> List[Dict[str, Any]]:
     """
     Builds model_plans compatible with execute_training_cycle().
     The hyperparameters can be scalar or lists (ParameterGrid is used inside execute_training_cycle).
@@ -66,7 +66,6 @@ def build_model_plans(include_clustering: bool) -> List[Dict[str, Any]]:
         "reasoning": "smoke test"
     })
 
-    # Regression model (won't be used if problem_type != regression, but harmless if you filter)
     plans.append({
         "model": "linear_regression",
         "hyperparameters": {
@@ -104,6 +103,18 @@ def build_model_plans(include_clustering: bool) -> List[Dict[str, Any]]:
         "reasoning": "Smoke test linear classifier across hinge vs logistic with basic optimizer/reg sweeps."
     })
 
+    if include_pca:
+        plans.append({
+            "model": "pca",
+            "hyperparameters": {
+                "n_components": [2, 0.90, 0.95],
+                "svd_solver": ["auto"],
+                "whiten": [False],
+                "random_state": [42],
+            },
+            "reasoning": "smoke test PCA (dimension reduction) across fixed k vs variance-retention"
+        })
+
     if include_clustering:
         plans.append({
             "model": "kmeans",
@@ -130,8 +141,18 @@ def print_leaderboard(results, top_k):
 
     def sort_key(r):
         m = r.get("metrics", {})
+        a = r.get("artifact", {}) or {}
         if "val_score" in m:
             return m["val_score"]
+
+        if "variance_explained" in m and m["variance_explained"] is not None:
+            return m["variance_explained"]
+        if "variance_explained" in a and a["variance_explained"] is not None:
+            return a["variance_explained"]
+
+        if "train_silhouette" in m and m["train_silhouette"] is not None:
+            return m["train_silhouette"]
+
         return m.get("train_silhouette", -1e30)
 
     ok_sorted = sorted(ok, key=sort_key, reverse=True)
@@ -146,9 +167,19 @@ def print_leaderboard(results, top_k):
         if "val_metric" in m:
             print(
                 f"{i:2d}. {model:16s} {metric_name} val={m.get('val_metric')} test={m.get('test_metric')} params={params}")
-        else:
+            continue
+        var_exp = m.get("variance_explained", a.get(
+            "variance_explained", None))
+        k_comp = m.get("k_components", a.get("k_components", None))
+        if var_exp is not None:
+            print(
+                f"{i:2d}. {model:16s} variance_explained={var_exp:.4f} k_components={k_comp} params={params}")
+            continue
+
+        if "train_silhouette" in m:
             print(
                 f"{i:2d}. {model:16s} silhouette={m.get('train_silhouette')} params={params}")
+            continue
 
     if bad:
         print("\n=== Errors ===")
@@ -163,10 +194,11 @@ def main():
         "--csv", default=_repo_relative_path("../test_datasets/basisData.csv"))
     parser.add_argument("--target", default=None)
     parser.add_argument("--problem-type", default="regression",
-                        choices=["classification", "regression", "clustering"])
+                        choices=["classification", "regression", "clustering", "dimension_reduction"])
     parser.add_argument(
         "--models", default="naive_bayes,decision_tree,knn,linear_regression,kmeans,dbscan,hierarchical")
     parser.add_argument("--include-clustering", action="store_true")
+    parser.add_argument("--include-pca", action="store_true")
     args = parser.parse_args()
 
     setup_django_if_needed()
@@ -182,19 +214,22 @@ def main():
         "grouping_column": None,
     }
 
+    needs_target = args.problem_type in ("classification", "regression")
+
     X_train, y_train, X_val, y_val, X_test, y_test, classes = prepare_datasets(
         dataset=dataset,
-        target_column=args.target if args.problem_type != "clustering" else None,
+        target_column=args.target if needs_target else None,
         data_split=data_split,
         problem_type=args.problem_type,
         headers=headers,
     )
 
-    print(f"X_train shape={X_train.shape}")
-
     model_plans = build_model_plans(
-        include_clustering=args.include_clustering or args.problem_type == "clustering")
+        include_clustering=args.include_clustering or args.problem_type == "clustering",
+        include_pca=args.include_pca or args.problem_type == "dimension_reduction",
+    )
 
+    import api.modelling as m
     if args.problem_type == "classification":
         model_plans = [p for p in model_plans if p["model"]
                        in (
@@ -214,6 +249,8 @@ def main():
             "kmeans",
             "dbscan",
             "hierarchical")]
+    elif args.problem_type == "dimension_reduction":
+        model_plans = [p for p in model_plans if p["model"] in ("pca",)]
 
     results, evaluated = execute_training_cycle(
         X_train, y_train, X_val, y_val, X_test, y_test, classes,

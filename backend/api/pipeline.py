@@ -9,6 +9,8 @@ from .modelling import model_control, serialize_artifact, MODEL_TASK
 
 from .utils import log_mem
 
+import logging
+
 
 TOP_KEEP = 10
 
@@ -347,6 +349,7 @@ def execute_training_cycle(
             except Exception as exc:
                 push_topk(results, {"model": model_type, "error": str(
                     exc), "metrics": {"val_score": -1e18}})
+                logging.error("Error with model")
                 continue
             finally:
                 try:
@@ -368,6 +371,31 @@ def training_models(model, is_supervised, problem_type, X_train, X_val, X_test, 
 
     pt = problem_type.lower()
     metrics["task"] = pt
+
+    if pt == "dimension_reduction":
+
+        model.fit(X_train)
+        var_exp = getattr(model, "variance_explained_", None)
+        if var_exp is None:
+            evr = getattr(model, "explained_variance_ratio_", None)
+            var_exp = float(np.sum(evr)) if evr is not None else 0.0
+
+        k = getattr(model, "k_components_", None)
+        if k is None:
+            k = int(getattr(model, "n_components_",
+                    getattr(model, "n_components", 0)) or 0)
+
+        metrics["primary_metric_name"] = "Explained Variance"
+        metrics["variance_explained"] = float(var_exp)
+        metrics["k_components"] = int(k)
+
+        metrics["val_metric"] = float(var_exp)
+        metrics["test_metric"] = float(var_exp)
+        metrics["val_score"] = float(var_exp)
+        metrics["test_score"] = float(var_exp)
+
+        return metrics
+
     if is_supervised:
         model.fit(X_train, y_train)
         if pt == "regression":
@@ -398,6 +426,7 @@ def training_models(model, is_supervised, problem_type, X_train, X_val, X_test, 
             metrics["test_metric"] = test_loss
             metrics["val_score"] = -val_loss
             metrics["test_score"] = -test_loss
+
         # Non-regression
         else:
             metrics["primary_metric_name"] = "Accuracy"

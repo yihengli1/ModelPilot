@@ -4,38 +4,26 @@ import numpy as np
 
 # If u want to PCA through the application
 class PCAModel:
-    """
-    This wrapper exists so we can expose a couple of convenient artifacts after fit:
-      - k_components_: the actual number of components chosen after fitting
-      - variance_explained_: total explained variance ratio of the retained components
-    """
-
-    def __init__(
-        self,
-        n_components,
-        svd_solver="auto",
-        whiten=False,
-        random_state=42,
-    ):
+    def __init__(self, n_components, svd_solver="auto", whiten=False, random_state=42):
+        print("init pca", flush=True)
         self.pca = PCA(
             n_components=n_components,
             svd_solver=svd_solver,
             whiten=whiten,
             random_state=random_state,
         )
-
         self.is_fit_ = False
-
         self.k_components_ = None
         self.variance_explained_ = None
 
-    def _update_pca_stats(self) -> None:
+    def _update_pca_stats(self):
         self.k_components_ = int(getattr(self.pca, "n_components_", 0) or 0)
         evr = getattr(self.pca, "explained_variance_ratio_", None)
         self.variance_explained_ = float(
             np.sum(evr)) if evr is not None else 0.0
 
     def fit(self, X, y=None):
+        print("PCA fit", flush=True)
         self.pca.fit(X)
         self._update_pca_stats()
         self.is_fit_ = True
@@ -47,16 +35,11 @@ class PCAModel:
         return self.pca.transform(X)
 
     def fit_transform(self, X, y=None):
+        print("PCA fit_transform", flush=True)
         Z = self.pca.fit_transform(X)
         self._update_pca_stats()
         self.is_fit_ = True
         return Z
-
-    def predict(self, X):
-        return self.transform(X)
-
-    def fit_predict(self, X, y=None):
-        return self.fit_transform(X)
 
 
 # preprocessing

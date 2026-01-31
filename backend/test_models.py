@@ -256,9 +256,6 @@ def main():
         X_train, y_train, X_val, y_val, X_test, y_test, classes,
         model_plans, args.problem_type
     )
-
-    # print(results)
-
     print_leaderboard(results, top_k=10)
 
 

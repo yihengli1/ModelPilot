@@ -16,6 +16,7 @@ const formatNumber = (val, maxDecimalPlaces = 4) => {
 const formatMetricValue = (task, val) => {
 	const t = (task || "").toLowerCase();
 	if (t === "classification") return formatPercent(val);
+	if (t === "dimension_reduction") return formatPercent(val);
 	// regression + clustering are not percents
 	return formatNumber(val, t === "clustering" ? 3 : 4);
 };
@@ -84,14 +85,26 @@ function ResultsPage() {
 		(currentSupervised ? "classification" : "clustering")
 	).toLowerCase();
 
-	const metricName =
-		currentModel?.metrics?.primary_metric_name ||
-		(task === "clustering" ? "Silhouette" : "Accuracy");
-
 	const valMetric = currentModel?.metrics?.val_metric;
 	const testMetric = currentModel?.metrics?.test_metric;
 
-	const trainSilhouette = currentModel?.metrics?.train_silhouette;
+	const isDimensionReduction = task === "dimension_reduction";
+
+	const hasVal =
+		valMetric !== undefined && valMetric !== null && !Number.isNaN(valMetric);
+	const hasTest =
+		testMetric !== undefined &&
+		testMetric !== null &&
+		!Number.isNaN(testMetric);
+	const showValTest = hasVal && hasTest;
+
+	const metricName =
+		currentModel?.metrics?.primary_metric_name ||
+		(task === "dimension_reduction"
+			? "Explained Variance"
+			: task === "clustering"
+				? "Silhouette"
+				: "Accuracy");
 
 	const handlePrev = () => {
 		setActiveIndex((prev) => (prev === 0 ? totalModels - 1 : prev - 1));
@@ -161,20 +174,17 @@ function ResultsPage() {
 								</div>
 
 								<div className="flex gap-8">
-									{currentSupervised ? (
+									{!showValTest ? (
 										<></>
 									) : (
 										<div className="text-center">
 											<p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-												Unsupervised Model
-											</p>
-											<p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-												No validation/test acc
+												No separate val/test metrics
 											</p>
 										</div>
 									)}
 									<div className="flex gap-8">
-										{currentSupervised ? (
+										{showValTest ? (
 											<>
 												<div className="text-center">
 													<p className="text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -197,7 +207,7 @@ function ResultsPage() {
 										) : (
 											<div className="text-center">
 												<p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-													{`Test ${metricName}`}
+													{`Score (${metricName})`}
 												</p>
 												<p className="font-mono text-2xl font-bold text-emerald-600">
 													{formatMetricValue(task, testMetric)}
@@ -229,7 +239,7 @@ function ResultsPage() {
 															{v === null ? "null" : String(v)}
 														</span>
 													</li>
-												)
+												),
 											)}
 										</ul>
 									) : (

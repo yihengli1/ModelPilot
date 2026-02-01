@@ -260,23 +260,55 @@ class MLPClassifierTorchNN(MLPBaseTorchNN):
         self.loss = "cross_entropy"
         self.n_classes_: Optional[int] = None
         self.classes_: Optional[np.ndarray] = None
+        self._class_to_index: Optional[dict] = None
+
+    def _py(self, v):
+        try:
+            return v.item()
+        except Exception:
+            return v
+
+    def _setup_label_map(self, y: np.ndarray):
+        y = np.asarray(y).reshape(-1)
+        classes = np.unique(y)
+        self.classes_ = classes
+        self.n_classes_ = int(len(classes))
+        self._class_to_index = {self._py(c): i for i, c in enumerate(classes)}
+
+    def _encode_y(self, y: np.ndarray) -> np.ndarray:
+        y = np.asarray(y).reshape(-1)
+        if self._class_to_index is None or self.classes_ is None:
+            self._setup_label_map(y)
+
+        try:
+            if (
+                np.issubdtype(self.classes_.dtype, np.number)
+                and np.issubdtype(y.dtype, np.number)
+            ):
+                idx = np.searchsorted(self.classes_, y)
+                if idx.size > 0 and not np.all(self.classes_[idx] == y):
+                    raise ValueError("Found unknown label in y.")
+                return idx.astype(np.int64, copy=False)
+        except Exception:
+            pass
+
+        return np.asarray([self._class_to_index[self._py(v)] for v in y], dtype=np.int64)
 
     def _infer_output_dim_and_loss(self, y: np.ndarray) -> Tuple[int, nn.Module]:
-        y = np.asarray(y, dtype=np.int64)
-        n_classes = int(np.max(y) + 1) if y.size else 0
-        if n_classes < 2:
+        self._setup_label_map(y)
+        if self.n_classes_ is None or self.n_classes_ < 2:
             raise ValueError("Classification requires at least 2 classes.")
-        self.n_classes_ = n_classes
-        self.classes_ = np.arange(n_classes, dtype=np.int64)
-        return n_classes, nn.CrossEntropyLoss()
+        return int(self.n_classes_), nn.CrossEntropyLoss()
 
     def _y_tensor(self, y: np.ndarray) -> torch.Tensor:
-        y = np.asarray(y, dtype=np.int64)
-        return _to_tensor(y, torch.long, self.device)
+        y_idx = self._encode_y(y)
+        return _to_tensor(y_idx, torch.long, self.device)
 
     def _predict_from_logits(self, logits: np.ndarray) -> np.ndarray:
-        # logits shape: [N, C]
-        return np.asarray(np.argmax(logits, axis=1), dtype=np.int64)
+        pred_idx = np.asarray(np.argmax(logits, axis=1), dtype=np.int64)
+        if self.classes_ is None:
+            return pred_idx
+        return self.classes_[pred_idx]
 
 
 class MLPRegressorTorchNN(MLPBaseTorchNN):

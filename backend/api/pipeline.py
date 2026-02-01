@@ -353,7 +353,8 @@ def execute_training_cycle(
             except Exception as exc:
                 push_topk(results, {"model": model_type, "error": str(
                     exc), "metrics": {"val_score": -1e18}})
-                logging.error("Error with model")
+                logging.error("Error with model:", str(
+                    exc))
                 continue
             finally:
                 try:

@@ -103,6 +103,41 @@ def build_model_plans(include_clustering: bool, include_pca) -> List[Dict[str, A
         "reasoning": "Smoke test linear classifier across hinge vs logistic with basic optimizer/reg sweeps."
     })
 
+    plans.append({
+        "model": "mlp_regressor",
+        "hyperparameters": {
+            "hidden_layers": [[128, 64], [256, 128, 64]],
+            "activation": ["relu"],
+            "dropout": [0.0, 0.1],
+            "optimizer": ["adam"],
+            "learning_rate": [1e-3],
+            "epochs": [300],
+            "batch_size": [64],
+            "weight_decay": [0.0, 1e-4],
+            "patience": [15],
+            "random_state": [42],
+            "loss": ["l2"],
+        },
+        "reasoning": "smoke test MLP regressor"
+    })
+
+    plans.append({
+        "model": "mlp_classifier",
+        "hyperparameters": {
+            "hidden_layers": [[128, 64], [256, 128, 64]],
+            "activation": ["relu"],
+            "dropout": [0.0, 0.1],
+            "optimizer": ["adam"],
+            "learning_rate": [1e-3],
+            "epochs": [300],
+            "batch_size": [64],
+            "weight_decay": [0.0, 1e-4],
+            "patience": [15],
+            "random_state": [42],
+        },
+        "reasoning": "smoke test MLP regressor"
+    })
+
     if include_pca:
         plans.append({
             "model": "pca",
@@ -236,12 +271,14 @@ def main():
             #    "naive_bayes",
             #    "decision_tree",
             #    "knn",
-            "linear_classifier",)]
+            # "linear_classifier",
+            "mlp_classifier")]
     elif args.problem_type == "regression":
         model_plans = [p for p in model_plans if p["model"]
                        in (
-            "linear_regression",
+            # "linear_regression",
             # "kernel_polynomial",
+            "mlp_regressor",
         )]
     elif args.problem_type == "clustering":
         model_plans = [p for p in model_plans if p["model"]

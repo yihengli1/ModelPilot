@@ -22,6 +22,8 @@ Recommend 1-3 appropriate model architectures from this allowed list ONLY:
    - "dbscan" (Unsupervised)
    - "hierarchical" (Unsupervised)
    - "pca" (dimension_reduction)
+   - "mlp_classifier"
+   - "mlp_regressor"
 
 Infer the best choice based on:
 - Data shape & size
@@ -29,8 +31,8 @@ Infer the best choice based on:
 - Missing value patterns
 - If target_column is null/None -> Use Unsupervised model.
 - If target_column is present -> Use decision_tree, naive_bayes, or knn.
-- If "problem_type" is "regression", choose from "linear_regression", kernel_polynomial".
-- If "problem_type" is "classification", choose from "decision_tree", "naive_bayes", "knn", "linear_classifier".
+- If "problem_type" is "regression", choose from "linear_regression", kernel_polynomial", mlp_regressor.
+- If "problem_type" is "classification", choose from "decision_tree", "naive_bayes", "knn", "linear_classifier", "mlp_classifier".
 - If "problem_type" is "clustering", choose from "kmeans", "dbscan", "hierarchical".
 - If "problem_type" is "dimension_reduction", choose from ""pca".
 
@@ -76,6 +78,29 @@ For 'pca':
 For 'kernel_polynomial':
    - "degree": (int)
    - "lam": (float 1e-6–1.0)
+
+For 'mlp_classifier':
+   - "hidden_layers": (list of ints OR list of list fof ints)
+   - "activation": (float 1e-6–1.0)
+   - "dropout": (float 0.0-0.5)
+   - "optimizer": one of ["sgd", "adam"]
+   - "learning_rate": (float, e.g., 0.001–0.1)
+   - "epochs": (int, e.g., 200–2000)
+   - "batch_size": (int, 1 = SGD, n = full GD, or 32–128 = minibatch)
+   - "weight_decay": (float 0.0-1e-2)
+   - "patience": (int 5–30)
+
+For 'mlp_regressor':
+   - "hidden_layers": (list of ints OR list of list fof ints)
+   - "activation": (float 1e-6–1.0)
+   - "dropout": (float 0.0-0.5)
+   - "optimizer": one of ["sgd", "adam"]
+   - "learning_rate": (float, e.g., 0.001–0.1)
+   - "epochs": (int, e.g., 200–2000)
+   - "batch_size": (int, 1 = SGD, n = full GD, or 32–128 = minibatch)
+   - "weight_decay": (float 0.0-1e-2)
+   - "patience": (int 5–30)
+   - "loss": one of ["l2", "l1", "huber"]
 
 #### Common hyperparameters for all Torch linear models
 Applies to:
@@ -204,6 +229,29 @@ REFINEMENT_CONTEXT = """
       For 'kernel_polynomial':
          - "degree": (int)
          - "lam": (float 1e-6–1.0)
+
+      For 'mlp_classifier':
+         - "hidden_layers": (list of ints OR list of list fof ints)
+         - "activation": (float 1e-6–1.0)
+         - "dropout": (float 0.0-0.5)
+         - "optimizer": one of ["sgd", "adam"]
+         - "learning_rate": (float, e.g., 0.001–0.1)
+         - "epochs": (int, e.g., 200–2000)
+         - "batch_size": (int, 1 = SGD, n = full GD, or 32–128 = minibatch)
+         - "weight_decay": (float 0.0-1e-2)
+         - "patience": (int 5–30)
+
+      For 'mlp_regressor':
+         - "hidden_layers": (list of ints OR list of list fof ints)
+         - "activation": (float 1e-6–1.0)
+         - "dropout": (float 0.0-0.5)
+         - "optimizer": one of ["sgd", "adam"]
+         - "learning_rate": (float, e.g., 0.001–0.1)
+         - "epochs": (int, e.g., 200–2000)
+         - "batch_size": (int, 1 = SGD, n = full GD, or 32–128 = minibatch)
+         - "weight_decay": (float 0.0-1e-2)
+         - "patience": (int 5–30)
+         - "loss": one of ["l2", "l1", "huber"]
 
       #### Common hyperparameters for all Torch linear models
       Applies to:

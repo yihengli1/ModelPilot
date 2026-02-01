@@ -69,6 +69,27 @@ const buildPythonSnippet = (modelName, params, targetColumn = null) => {
 			supervised: true,
 			custom: true,
 		},
+		mlp_regressor: {
+			import: "",
+			cls: "",
+			extra: "",
+			supervised: true,
+			custom: true,
+		},
+		mlp_classifier: {
+			import: "",
+			cls: "",
+			extra: "",
+			supervised: true,
+			custom: true,
+		},
+		pca: {
+			import: "",
+			cls: "",
+			extra: "",
+			supervised: true,
+			custom: true,
+		},
 	};
 
 	const info = MAP[modelName];
@@ -90,7 +111,7 @@ const buildPythonSnippet = (modelName, params, targetColumn = null) => {
 	const yLine = info.supervised
 		? `target_col = ${
 				targetColumn ? pyValue(targetColumn) : '"YOUR_TARGET_COLUMN"'
-		  }
+			}
 y = df[target_col].to_numpy()
 X = df.drop(columns=[target_col]).to_numpy()`
 		: `X = df.to_numpy()`;

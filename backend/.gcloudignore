@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Virtualenvs
+.venv/
+venv/
+env/
+
+# Git + IDE
+.git/
+.vscode/
+.idea/
+
+# Node / frontend (if accidentally included)
+node_modules/
+dist/
+build/
+
+# OS + misc
+.DS_Store
+*.log
+
+# Secrets
+.env
+.env.*
+*.pem
+*.key
+
+# Big local data / outputs (customize)
+data/
+datasets/
+models/
+checkpoints/
+media/
+staticfiles/
+*.sqlite3

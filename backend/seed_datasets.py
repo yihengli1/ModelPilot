@@ -1,7 +1,7 @@
 import requests
 import os
 
-BASE_URL = "http://127.0.0.1:8000/api/datasets/"
+BASE_URL = "https://modelpilot-backend-364563820414.us-west1.run.app/api/datasets/"
 SOURCE_DIR = "../test_datasets"
 
 # UNCOMMENT BELOW TO SEED DATASETS
@@ -53,7 +53,7 @@ datasets_to_upload = [
         "name": "Animal Morphometrics (PCA)",
         "type": "Dimensionality Reduction",
         "description": "Explore animal body-shape measurements using PCA to find dominant variation patterns.",
-        "filename": "animalMorphometrics.csv",
+        "filename": "animals.csv",
         "prompt": "No target column. Perform PCA "
     },
 

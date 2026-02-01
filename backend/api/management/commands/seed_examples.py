@@ -54,7 +54,7 @@ DATASETS = [
         "name": "Animal Morphometrics (PCA)",
         "type": "Dimensionality Reduction",
         "description": "Explore animal body-shape measurements using PCA to find dominant variation patterns.",
-        "filename": "animalMorphometrics.csv",
+        "filename": "animals.csv",
         "prompt": "No target column. Perform PCA "
     },
 ]

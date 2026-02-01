@@ -66,6 +66,8 @@ The system currently supports the following algorithms via scikit-learn + PyTorc
 - **K-Means Clustering**: Unsupervised clustering with tunable *k*; includes silhouette score evaluation.
 - **DBSCAN**: Density-based clustering; includes silhouette score evaluation where applicable.
 - **Hierarchical Clustering**: Agglomerative clustering with linkage options; includes silhouette score evaluation where applicable.
+- **PCA (Principal Component Analysis)**: Unsupervised dimensionality reduction for compressing features while preserving variance; reports explained variance and component count.
+- **MLP (Neural Network)**: Feedforward multilayer perceptron for tabular data (classification & regression); supports configurable hidden layers, activation, dropout, optimizer, and early stopping.
 
 ### Supported Optimizers
 
@@ -83,9 +85,7 @@ The system currently supports the following algorithms via scikit-learn + PyTorc
 - Cleaning: Automated removal of duplicate or irrelevant examples.
 
 ### Expanded Model Library
-- Ensemble Methods: Random Forests and Gradient Boosted Trees (XGBoost).
-- Dimensionality Reduction: PCA, MDS (ISOMAP, Sammon's Map).
-- Deep Learning: Neural Networks, CNNs, and Transformers.
+- Done :D
 
 ### Optimization & Visualization
 

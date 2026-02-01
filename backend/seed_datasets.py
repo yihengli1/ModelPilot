@@ -48,7 +48,16 @@ datasets_to_upload = [
         "description": "Group customers into natural segments based on spending behavior and engagement features.",
         "filename": "clusterData.csv",
         "prompt": "No target column. Perform clustering to discover meaningful clusters."
-    }
+    },
+    {
+        "name": "Animal Morphometrics (PCA)",
+        "type": "Dimensionality Reduction",
+        "description": "Explore animal body-shape measurements using PCA to find dominant variation patterns.",
+        "filename": "animalMorphometrics.csv",
+        "prompt": "No target column. Perform PCA "
+    },
+
+
 ]
 
 

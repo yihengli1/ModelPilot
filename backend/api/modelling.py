@@ -1,6 +1,8 @@
 from .complexmodels.regression import LinearRegressionTorchNN, KernelPolynomialTorch
 from .complexmodels.linear_classifier import LinearClassifierTorchNN
 from .complexmodels.pca import PCAModel as WrappedPCA
+from .complexmodels.mlp import MLPClassifierTorchNN, MLPRegressorTorchNN
+
 
 MODEL_TASK = {
     "linear_regression": "regression",
@@ -13,6 +15,8 @@ MODEL_TASK = {
     "dbscan": "clustering",
     "hierarchical": "clustering",
     "pca": "dimension_reduction",
+    "mlp_classifier": "classification",
+    "mlp_regressor": "regression",
 }
 
 
@@ -54,6 +58,12 @@ def model_control(model_type, single_param_set):
     elif model_type == "pca":
         model_type = WrappedPCA(**single_param_set)
         is_supervised = False
+    elif model_type == "mlp_classifier":
+        model_type = MLPClassifierTorchNN(**single_param_set)
+        is_supervised = True
+    elif model_type == "mlp_regressor":
+        model_type = MLPRegressorTorchNN(**single_param_set)
+        is_supervised = True
     else:
         raise ValueError(
             f"Model type '{model_type}' is not supported or recognized.")
@@ -123,6 +133,37 @@ def serialize_artifact(classifier, model, metrics):
                 "n_components": int(getattr(pca, "n_components_", getattr(pca, "n_components", 0)) or 0),
                 "variance_explained": getattr(classifier, "variance_explained_", None)
             }
+        elif model == "mlp_classifier":
+            return {
+                "input_dim": int(getattr(classifier, "input_dim_", 0) or 0),
+                "output_dim": int(getattr(classifier, "output_dim_", 0) or 0),
+                "hidden_layers": list(getattr(classifier, "hidden_layers", []) or []),
+                "activation": getattr(classifier, "activation", "relu"),
+                "dropout": float(getattr(classifier, "dropout", 0.0) or 0.0),
+                "optimizer": getattr(classifier, "optimizer", "adam"),
+                "learning_rate": float(getattr(classifier, "learning_rate", 0.0) or 0.0),
+                "epochs_trained": int(getattr(getattr(classifier, "fit_stats_", None), "epochs_trained", 0) or 0),
+                "best_val_loss": getattr(getattr(classifier, "fit_stats_", None), "best_val_loss", None),
+                "n_params": int(getattr(classifier, "n_params_", 0) or 0),
+                "n_classes": int(getattr(classifier, "n_classes_", 0) or 0),
+                "loss": getattr(classifier, "loss", "cross_entropy"),
+            }
+
+        elif model == "mlp_regressor":
+            return {
+                "input_dim": int(getattr(classifier, "input_dim_", 0) or 0),
+                "output_dim": int(getattr(classifier, "output_dim_", 0) or 0),
+                "hidden_layers": list(getattr(classifier, "hidden_layers", []) or []),
+                "activation": getattr(classifier, "activation", "relu"),
+                "dropout": float(getattr(classifier, "dropout", 0.0) or 0.0),
+                "optimizer": getattr(classifier, "optimizer", "adam"),
+                "learning_rate": float(getattr(classifier, "learning_rate", 0.0) or 0.0),
+                "epochs_trained": int(getattr(getattr(classifier, "fit_stats_", None), "epochs_trained", 0) or 0),
+                "best_val_loss": getattr(getattr(classifier, "fit_stats_", None), "best_val_loss", None),
+                "n_params": int(getattr(classifier, "n_params_", 0) or 0),
+                "loss": getattr(classifier, "loss", "l2"),
+            }
+
         else:
             return {}
     except Exception:

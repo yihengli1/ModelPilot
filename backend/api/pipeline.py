@@ -322,9 +322,13 @@ def execute_training_cycle(
         model_type = plan.get("model")
         params = plan.get("hyperparameters", {})
 
-        # list of prams
-        grid_params = {k: (v if isinstance(v, list) else [
-                           v]) for k, v in params.items()}
+        grid_params = {}
+
+        for k, v in params.items():
+            if k == "hidden_layers" and isinstance(v, list) and (len(v) == 0 or isinstance(v[0], int)):
+                grid_params[k] = [v]
+                continue
+            grid_params[k] = v if isinstance(v, list) else [v]
 
         for single_param_set in ParameterGrid(grid_params):
             evaluated += 1
@@ -397,7 +401,21 @@ def training_models(model, is_supervised, problem_type, X_train, X_val, X_test, 
         return metrics
 
     if is_supervised:
-        model.fit(X_train, y_train)
+        import inspect
+        # early stopping
+        fit_sig = None
+        try:
+            fit_sig = inspect.signature(model.fit)
+        except Exception:
+            fit_sig = None
+
+        if fit_sig is not None and len(fit_sig.parameters) >= 4:
+            try:
+                model.fit(X_train, y_train, X_val, y_val)
+            except TypeError:
+                model.fit(X_train, y_train)
+        else:
+            model.fit(X_train, y_train)
         if pt == "regression":
             val_pred = np.asarray(model.predict(
                 X_val), dtype=float).reshape(-1)

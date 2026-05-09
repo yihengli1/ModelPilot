@@ -138,7 +138,6 @@ class MLPBaseTorchNN:
             return self.scaler_.fit_transform(X).astype(np.float32, copy=False)
         return self.scaler_.transform(X).astype(np.float32, copy=False)
 
-    # --- override these in child classes ---
     def _infer_output_dim_and_loss(self, y: np.ndarray) -> Tuple[int, nn.Module]:
         raise NotImplementedError
 
@@ -167,17 +166,14 @@ class MLPBaseTorchNN:
         self.n_params_ = self._count_params()
         opt = self._build_optimizer(self.model_.parameters())
 
-        # training loader
         Xt = _to_tensor(Xn, torch.float32, self.device)
 
-        # dtype: classifier uses long, regressor uses float handled in subclass
         yt = self._y_tensor(y)
 
         ds = TensorDataset(Xt, yt)
         bs = max(1, min(self.batch_size, len(ds)))
         dl = DataLoader(ds, batch_size=bs, shuffle=True)
 
-        # optional val
         has_val = X_val is not None and y_val is not None and len(
             np.asarray(y_val)) > 0
         if has_val:
@@ -203,7 +199,6 @@ class MLPBaseTorchNN:
                 opt.step()
                 epoch_losses.append(float(loss.detach().cpu().item()))
 
-            # val loss for early stopping
             val_loss = None
             if has_val:
                 self.model_.eval()
@@ -220,8 +215,7 @@ class MLPBaseTorchNN:
                     no_improve = 0
                 else:
                     no_improve += 1
-                    if no_improve >= self.patience:
-                        # stop early
+                    if no_improve >= self.patience:  # stop early
                         self.fit_stats_.epochs_trained = epoch + 1
                         self.fit_stats_.best_val_loss = best_val
                         break
@@ -229,7 +223,6 @@ class MLPBaseTorchNN:
             self.fit_stats_.epochs_trained = epoch + 1
             self.fit_stats_.best_val_loss = best_val
 
-        # restore best if we had val
         if best_state is not None:
             self.model_.load_state_dict(
                 {k: v.to(self.device) for k, v in best_state.items()})
@@ -317,7 +310,6 @@ class MLPRegressorTorchNN(MLPBaseTorchNN):
         self.loss = (loss or "l2").lower()
 
     def _infer_output_dim_and_loss(self, y: np.ndarray) -> Tuple[int, nn.Module]:
-        # output dim 1
         if self.loss == "l1":
             loss_fn = nn.L1Loss()
         elif self.loss == "huber":

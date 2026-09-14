@@ -147,13 +147,21 @@ def generate_refined_plan_gpt(
 
     client = OpenAI(api_key=api_key)
 
+    ranked_results = sorted(
+        initial_results,
+        key=lambda r: r.get("metrics", {}).get("val_score", -1e18),
+        reverse=True,
+    )
     context_results = []
-    for res in initial_results:
+    for res in ranked_results:
+        metrics = res.get("metrics") or {}
         context_results.append({
             "model": res.get("model"),
             "hyperparameters": res.get("hyperparameters"),
-            "val_accuracy": res.get("val_accuracy"),
-            "error": res.get("error")
+            "primary_metric_name": metrics.get("primary_metric_name"),
+            "val_score": metrics.get("val_score"),
+            "test_score": metrics.get("test_score"),
+            "error": res.get("error"),
         })
 
     user_message = f"""

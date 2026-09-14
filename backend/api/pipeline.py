@@ -13,6 +13,42 @@ import logging
 
 
 TOP_KEEP = 10
+CV_FOLDS = 3
+CV_SEED = 42
+
+# Torch/gradient-trained models are too slow to re-fit CV_FOLDS+1 times per
+# hyperparameter config (epochs can run into the thousands). CV ranking is
+# restricted to the cheap, single-shot sklearn models below; these keep the
+# original single-split evaluation.
+CV_EXPENSIVE_MODELS = {
+    "linear_regression", "kernel_polynomial", "linear_classifier",
+    "mlp_classifier", "mlp_regressor",
+}
+
+
+def _make_cv_folds(y_pool, problem_type, n_splits=CV_FOLDS, seed=CV_SEED):
+    """Build train/val index pairs for k-fold CV over a pooled (train+val) set.
+    Returns None when the pool is too small/imbalanced to support >=2 folds,
+    so callers can fall back to a single holdout split."""
+    from sklearn.model_selection import KFold, StratifiedKFold
+
+    n = len(y_pool)
+    if n < 4:
+        return None
+
+    if problem_type.lower() == "regression":
+        n_splits_eff = max(2, min(n_splits, n))
+        kf = KFold(n_splits=n_splits_eff, shuffle=True, random_state=seed)
+        return list(kf.split(np.zeros(n)))
+
+    _, counts = np.unique(y_pool, return_counts=True)
+    min_class_count = int(counts.min()) if counts.size else n
+    if min_class_count < 2:
+        return None
+    n_splits_eff = max(2, min(n_splits, min_class_count))
+
+    skf = StratifiedKFold(n_splits=n_splits_eff, shuffle=True, random_state=seed)
+    return list(skf.split(np.zeros(n), y_pool))
 
 
 def push_topk(results, item):
@@ -321,11 +357,21 @@ def prepare_datasets(
 
 def execute_training_cycle(
     X_train, y_train, X_val, y_val, X_test, y_test, classes,
-    model_plans, problem_type
+    model_plans, problem_type, n_folds: int = CV_FOLDS,
 ) -> List[Dict[str, Any]]:
     from sklearn.model_selection import ParameterGrid
     results = []
     evaluated = 0
+
+    pt = problem_type.lower()
+    use_cv = pt in ("classification", "regression") and X_train.shape[0] > 0
+
+    folds = None
+    if use_cv:
+        X_pool = np.concatenate([X_train, X_val], axis=0) if X_val.shape[0] > 0 else X_train
+        y_pool = np.concatenate([y_train, y_val], axis=0) if X_val.shape[0] > 0 else y_train
+        folds = _make_cv_folds(y_pool, pt, n_splits=n_folds)
+        use_cv = folds is not None
 
     for plan in model_plans:
         model_type = plan.get("model")
@@ -348,6 +394,23 @@ def execute_training_cycle(
                 metrics = training_models(
                     model, is_supervised, problem_type, X_train, X_val, X_test, y_train, y_val, y_test)
 
+                if is_supervised and use_cv and model_type not in CV_EXPENSIVE_MODELS:
+                    fold_scores = []
+                    for tr_idx, va_idx in folds:
+                        fold_model, _ = model_control(model_type, single_param_set)
+                        fold_metrics = training_models(
+                            fold_model, is_supervised, problem_type,
+                            X_pool[tr_idx], X_pool[va_idx], X_pool[va_idx],
+                            y_pool[tr_idx], y_pool[va_idx], y_pool[va_idx],
+                        )
+                        fold_scores.append(fold_metrics["val_score"])
+                        del fold_model
+
+                    metrics["holdout_val_score"] = metrics["val_score"]
+                    metrics["cv_folds"] = len(folds)
+                    metrics["cv_val_score_std"] = float(np.std(fold_scores))
+                    metrics["val_score"] = float(np.mean(fold_scores))
+
                 artifact = serialize_artifact(model, model_type, metrics)
 
                 item = {
@@ -362,8 +425,7 @@ def execute_training_cycle(
             except Exception as exc:
                 push_topk(results, {"model": model_type, "error": str(
                     exc), "metrics": {"val_score": -1e18}})
-                logging.error("Error with model:", str(
-                    exc))
+                logging.error("Error with model %s: %s", model_type, exc)
                 continue
             finally:
                 try:

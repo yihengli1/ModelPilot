@@ -11,6 +11,7 @@ MODEL_TASK = {
     "decision_tree": "classification",
     "naive_bayes": "classification",
     "knn": "classification",
+    "svm": "classification",
     "kmeans": "clustering",
     "dbscan": "clustering",
     "hierarchical": "clustering",
@@ -25,6 +26,7 @@ def model_control(model_type, single_param_set):
     from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering
     from sklearn.naive_bayes import GaussianNB
     from sklearn.tree import DecisionTreeClassifier
+    from sklearn.svm import SVC
 
     is_supervised = True
     if model_type == "naive_bayes":
@@ -37,7 +39,11 @@ def model_control(model_type, single_param_set):
     elif model_type == "knn":
         model_type = KNeighborsClassifier(**single_param_set)
         is_supervised = True
+    elif model_type == "svm":
+        model_type = SVC(**single_param_set, random_state=42)
+        is_supervised = True
     elif model_type == "linear_classifier":
+        single_param_set = {"loss": "logistic", **single_param_set}
         model_type = LinearClassifierTorchNN(**single_param_set)
         is_supervised = True
     elif model_type == "linear_regression":
@@ -90,6 +96,12 @@ def serialize_artifact(classifier, model, metrics):
                 "n_samples_fit": classifier.n_samples_fit_,
                 "n_features": classifier.n_features_in_,
                 "effective_metric": classifier.effective_metric_,
+            }
+        elif model == "svm":
+            return {
+                "n_support": classifier.n_support_.tolist(),
+                "kernel": classifier.kernel,
+                "n_features": classifier.n_features_in_,
             }
         elif model == "linear_regression":
             return {

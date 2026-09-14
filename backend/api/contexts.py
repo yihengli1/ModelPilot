@@ -11,10 +11,11 @@ If the user provides NO prompt or NO target column, you must:
    - If no target is apparent, set "target_column" to null (Unsupervised).
 
 ### 2. Model Selection (If the user specified a specific model family, DO NOT suggest others.)
-Recommend 1-3 appropriate model architectures from this allowed list ONLY:
+Recommend 2-4 appropriate model architectures from this allowed list ONLY:
    - "decision_tree"
    - "naive_bayes"
    - "knn"
+   - "svm"
    - "linear_regression"
    - "kernel_polynomial"
    - "linear_classifier"
@@ -30,11 +31,12 @@ Infer the best choice based on:
 - Feature types (Categorical vs Numerical)
 - Missing value patterns
 - If target_column is null/None -> Use Unsupervised model.
-- If target_column is present -> Use decision_tree, naive_bayes, or knn.
-- If "problem_type" is "regression", choose from "linear_regression", kernel_polynomial", mlp_regressor.
-- If "problem_type" is "classification", choose from "decision_tree", "naive_bayes", "knn", "linear_classifier", "mlp_classifier".
+- If "problem_type" is "regression", choose from "linear_regression", "kernel_polynomial", "mlp_regressor".
+- If "problem_type" is "classification", choose from "decision_tree", "naive_bayes", "knn", "svm", "linear_classifier", "mlp_classifier".
 - If "problem_type" is "clustering", choose from "kmeans", "dbscan", "hierarchical".
-- If "problem_type" is "dimension_reduction", choose from ""pca".
+- If "problem_type" is "dimension_reduction", choose from "pca".
+
+Diversity requirement: for classification and regression tasks, do NOT recommend only tree/naive-bayes-style baselines. Include at least one margin/distance-based or neural model ("svm", "knn", "linear_classifier", "mlp_classifier", "mlp_regressor") alongside at least one simple baseline ("decision_tree", "naive_bayes", "linear_regression"), so the downstream evaluation compares genuinely different decision boundaries rather than three variants of the same idea.
 
 ### 3. Hyperparameter Proposal
 Propose valid hyperparameters. You are RESTRICTED to the following keys only:
@@ -53,6 +55,11 @@ For 'knn':
 
 For 'naive_bayes':
    - N/A
+
+For 'svm':
+   - "C": (float, e.g., 0.01–100)
+   - "kernel": ("linear", "rbf", "poly", "sigmoid")
+   - "gamma": ("scale", "auto") or float
 
 For 'kmeans':
    - "n_clusters": (int, e.g., 3, etc.)
@@ -81,7 +88,7 @@ For 'kernel_polynomial':
 
 For 'mlp_classifier':
    - "hidden_layers": (list of ints OR list of list fof ints)
-   - "activation": (float 1e-6–1.0)
+   - "activation": ("relu", "leaky_relu", "tanh")
    - "dropout": (float 0.0-0.5)
    - "optimizer": one of ["sgd", "adam"]
    - "learning_rate": (float, e.g., 0.001–0.1)
@@ -92,7 +99,7 @@ For 'mlp_classifier':
 
 For 'mlp_regressor':
    - "hidden_layers": (list of ints OR list of list fof ints)
-   - "activation": (float 1e-6–1.0)
+   - "activation": ("relu", "leaky_relu", "tanh")
    - "dropout": (float 0.0-0.5)
    - "optimizer": one of ["sgd", "adam"]
    - "learning_rate": (float, e.g., 0.001–0.1)
@@ -120,8 +127,13 @@ Allowed keys:
 For "linear_regression" (Torch):
 - "loss": one of ["l2", "l1", "huber"]
 
+For "linear_classifier" (Torch):
+- "loss": (REQUIRED) one of ["logistic", "hinge"]
+
 
 DO NOT generate parameters outside this list (e.g., do not use 'learning_rate' or 'n_estimators').
+
+For any hyperparameter where a reasonable range applies (e.g., "n_neighbors", "C", "max_depth"), you may supply a **list of 2-3 candidate values** instead of a single value (e.g., "n_neighbors": [3, 7, 11]) so the initial run already covers a small grid instead of one guess. Keep it to at most 2 such list-valued parameters per model to control runtime.
 
 ### 4. Data Split Strategy
 Propose a split strategy:
@@ -169,7 +181,9 @@ Return ONLY the identified column name as a raw, non-quoted string.
 """
 
 REFINEMENT_CONTEXT = """
-    You are an expert AutoML Tuning Assistant. Your goal is to generate a "Refinement Plan" to improve Validation Accuracy (or Silhouette Score for clustering) based on previous results.
+    You are an expert AutoML Tuning Assistant. Your goal is to generate a "Refinement Plan" to improve validation performance based on previous results.
+
+    Each entry in PREVIOUS TRAINING RESULTS has a "val_score" (higher is always better; for classification this is accuracy, for regression it is negative loss) and "primary_metric_name" telling you what it represents. Entries are sorted best-first. Use "val_score" (not "test_score", which you must not optimize against) to judge which configs worked and which didn't.
 
     ### CRITICAL: USER CONSTRAINTS
     1. **Model Constraints:** If the user specified a specific model family, DO NOT suggest others.
@@ -204,6 +218,11 @@ REFINEMENT_CONTEXT = """
       For 'naive_bayes':
          - N/A
 
+      For 'svm':
+         - "C": (float, e.g., 0.01–100)
+         - "kernel": ("linear", "rbf", "poly", "sigmoid")
+         - "gamma": ("scale", "auto") or float
+
       For 'kmeans':
          - "n_clusters": (int, e.g., 3, etc.)
          - "init": ("k-means++", "random")
@@ -232,7 +251,7 @@ REFINEMENT_CONTEXT = """
 
       For 'mlp_classifier':
          - "hidden_layers": (list of ints OR list of list fof ints)
-         - "activation": (float 1e-6–1.0)
+         - "activation": ("relu", "leaky_relu", "tanh")
          - "dropout": (float 0.0-0.5)
          - "optimizer": one of ["sgd", "adam"]
          - "learning_rate": (float, e.g., 0.001–0.1)
@@ -243,7 +262,7 @@ REFINEMENT_CONTEXT = """
 
       For 'mlp_regressor':
          - "hidden_layers": (list of ints OR list of list fof ints)
-         - "activation": (float 1e-6–1.0)
+         - "activation": ("relu", "leaky_relu", "tanh")
          - "dropout": (float 0.0-0.5)
          - "optimizer": one of ["sgd", "adam"]
          - "learning_rate": (float, e.g., 0.001–0.1)
@@ -270,6 +289,9 @@ REFINEMENT_CONTEXT = """
 
       For "linear_regression" (Torch):
       - "loss": one of ["l2", "l1", "huber"]
+
+      For "linear_classifier" (Torch):
+      - "loss": (REQUIRED) one of ["logistic", "hinge"]
 
 
     ### OUTPUT FORMAT

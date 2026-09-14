@@ -93,6 +93,15 @@ def _split_dataset(
     X_val = X_float[val_idx]
     X_test = X_float[test_idx]
 
+    if X_train.shape[0] > 0:
+        from sklearn.preprocessing import StandardScaler
+        scaler = StandardScaler()
+        X_train = scaler.fit_transform(X_train).astype(np.float32, copy=False)
+        if X_val.shape[0] > 0:
+            X_val = scaler.transform(X_val).astype(np.float32, copy=False)
+        if X_test.shape[0] > 0:
+            X_test = scaler.transform(X_test).astype(np.float32, copy=False)
+
     if target_idx != -1:
         y_train = y_encoded[train_idx].astype(y_dtype, copy=False)
         y_val = y_encoded[val_idx].astype(y_dtype, copy=False)
@@ -410,7 +419,7 @@ def training_models(model, is_supervised, problem_type, X_train, X_val, X_test, 
         except Exception:
             fit_sig = None
 
-        if fit_sig is not None and len(fit_sig.parameters) >= 4:
+        if fit_sig is not None and {"X_val", "y_val"}.issubset(fit_sig.parameters):
             try:
                 model.fit(X_train, y_train, X_val, y_val)
             except TypeError:
